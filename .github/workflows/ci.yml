@@ -9,6 +9,7 @@ jobs:
     - env:
         PACKAGES_READER_GITHUB_TOKEN: ${{ secrets.PACKAGES_READER_GITHUB_TOKEN }}
         PACKAGES_READER_GITHUB_USER: ${{ secrets.PACKAGES_READER_GITHUB_USER }}
+        CWM_WORKER_OPERATOR_DEPLOY_KEY: ${{ secrets.CWM_WORKER_OPERATOR_DEPLOY_KEY }}
       run: |
         curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" &&\
         chmod +x ./kubectl && sudo mv ./kubectl /usr/local/bin/kubectl &&\
@@ -54,4 +55,15 @@ jobs:
         [ "$?" != "0" ] && exit 1
         sleep 10
         kubectl get ns test1 && echo namespace still exists && exit 1
-        echo Great Success!
+        echo "${CWM_WORKER_OPERATOR_DEPLOY_KEY}" > cwm_worker_operator_deploy_key &&\
+        chmod 400 cwm_worker_operator_deploy_key &&\
+        export GIT_SSH_COMMAND="ssh -i $(pwd)/cwm_worker_operator_deploy_key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" &&\
+        git clone git@github.com:CloudWebManage/cwm-worker-operator.git &&\
+        git config --global user.name "cwm-worker-deployment CI" &&\
+        git config --global user.email "cwm-worker-deployment-ci@localhost" &&\
+        cd cwm-worker-operator &&\
+        cat ../requirements.txt > requirements-cwm-worker-deployment.txt &&\
+        echo "-e \"git+https://github.com/CloudWebManage/cwm-worker-deployment.git@${GITHUB_SHA}#egg=cwm-worker-deployment\"" >> requirements-cwm-worker-deployment.txt &&\
+        git add requirements-cwm-worker-deployment.txt &&\
+        git commit -m "automatic update of cwm-worker-deployment" &&\
+        git push origin master
