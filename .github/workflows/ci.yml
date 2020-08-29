@@ -27,16 +27,16 @@ jobs:
         PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}'
         sudo apt-get install -y python3-venv &&\
         python3 -m venv venv &&\
-        venv/bin/python3 -m pip install --upgrade pip &&\
-        venv/bin/python3 -m pip install --upgrade setuptools wheel &&\
-        venv/bin/python -m pip install -r requirements.txt &&\
-        venv/bin/python -m pip install -e .
+        . venv/bin/activate &&\
+        python -m pip install --upgrade pip &&\
+        python -m pip install --upgrade setuptools wheel &&\
+        python -m pip install -r requirements.txt &&\
+        python -m pip install -e .
         [ "$?" != "0" ] && exit 1
         echo '
         cwm-worker-deployment:
           type: minio
           namespace: test1
-          chart-path: ../cwm-worker-deployment-minio/helm
         minio:
           createPullSecret: |
             '${PULL_SECRET}'
