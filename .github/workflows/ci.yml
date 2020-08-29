@@ -49,6 +49,7 @@ jobs:
         done
         cwm_worker_deployment details test1 minio &&\
         cwm_worker_deployment history test1 minio &&\
+        [ "$(cwm_worker_deployment get_hostname test1 minio)" == "minio.test1.svc.cluster.local" ] &&\
         cwm_worker_deployment delete test1 minio --delete-namespace
         [ "$?" != "0" ] && exit 1
         sleep 10

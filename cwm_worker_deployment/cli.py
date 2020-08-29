@@ -52,5 +52,10 @@ def main():
         namespace_name = args[0]
         deployment_type = args[1]
         yaml.safe_dump(deployment.history(namespace_name, deployment_type), sys.stdout, default_flow_style=False)
+    elif sys.argv[1] == "get_hostname":
+        args = sys.argv[2:]
+        namespace_name = args[0]
+        deployment_type = args[1]
+        print(deployment.get_hostname(namespace_name, deployment_type))
     else:
         raise Exception()

@@ -78,3 +78,7 @@ def details(namespace_name, deployment_type):
 def history(namespace_name, deployment_type):
     release_name = _get_release_name(namespace_name, deployment_type)
     return helm.get_release_history(namespace_name, release_name)
+
+
+def get_hostname(namespace_name, deployment_type):
+    return config.DEPLOYMENT_TYPES[deployment_type]["hostname"].format(namespace_name=namespace_name)
