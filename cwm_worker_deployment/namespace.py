@@ -2,7 +2,15 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 
-config.load_kube_config()
+try:
+    config.load_incluster_config()
+except config.ConfigException:
+    try:
+        config.load_kube_config()
+    except config.ConfigException:
+        raise Exception("Could not configure kubernetes python client")
+
+
 codeV1Api = client.CoreV1Api()
 appsV1Api = client.AppsV1Api()
 
