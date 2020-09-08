@@ -1,7 +1,9 @@
+import urllib3
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 
+urllib3.disable_warnings()
 try:
     config.load_incluster_config()
 except config.ConfigException:

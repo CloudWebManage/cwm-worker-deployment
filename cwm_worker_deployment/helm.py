@@ -64,7 +64,14 @@ def delete(namespace_name, release_name, timeout_string=None, dry_run=False):
         cmd += ["--timeout", timeout_string]
     if dry_run:
         cmd += ["--dry-run"]
-    subprocess.check_call(cmd)
+    result = subprocess.run(cmd, stderr=subprocess.PIPE)
+    if result.returncode == 0:
+        return True
+    else:
+        if 'release: not found' in result.stderr.decode():
+            return True
+        else:
+            raise Exception(result.stderr.decode())
 
 
 def get_release_details(namespace_name, release_name):
