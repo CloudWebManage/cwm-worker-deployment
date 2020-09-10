@@ -19,7 +19,7 @@ jobs:
         bin/python_init_venv_requirements_module.sh &&\
         bin/minikube_wait.sh &&\
         . venv/bin/activate &&\
-        PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}' &&\
+        export PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}' &&\
         tests/run_tests.sh &&\
         echo "${CWM_WORKER_OPERATOR_DEPLOY_KEY}" > cwm_worker_operator_deploy_key &&\
         chmod 400 cwm_worker_operator_deploy_key &&\
