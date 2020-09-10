@@ -11,50 +11,16 @@ jobs:
         PACKAGES_READER_GITHUB_USER: ${{ secrets.PACKAGES_READER_GITHUB_USER }}
         CWM_WORKER_OPERATOR_DEPLOY_KEY: ${{ secrets.CWM_WORKER_OPERATOR_DEPLOY_KEY }}
       run: |
-        curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" &&\
-        chmod +x ./kubectl && sudo mv ./kubectl /usr/local/bin/kubectl &&\
-        kubectl version --client &&\
-        curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 &&\
-        chmod +x minikube && sudo mv minikube /usr/local/bin/minikube &&\
-        minikube version &&\
-        curl -Ls https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz -ohelm.tar.gz &&\
-        tar -xzvf helm.tar.gz && sudo mv linux-amd64/helm /usr/local/bin/helm &&\
-        sudo chmod +x /usr/local/bin/helm &&\
-        rm -rf linux-amd64 && rm helm.tar.gz &&\
-        helm version &&\
-        minikube start --driver=docker --kubernetes-version=v1.16.14 &&\
-        kubectl get nodes
-        [ "$?" != "0" ] && exit 1
-        PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}'
-        sudo apt-get install -y python3-venv &&\
-        python3 -m venv venv &&\
+        sudo bin/install_minikube.sh && minikube version &&\
+        bin/minikube_start.sh &&\
+        sudo bin/install_kubectl.sh && kubectl version --client &&\
+        sudo bin/install_helm.sh && helm version &&\
+        sudo bin/install_python.sh &&\
+        bin/python_init_venv_requirements_module.sh &&\
+        bin/minikube_wait.sh &&\
         . venv/bin/activate &&\
-        python -m pip install --upgrade pip &&\
-        python -m pip install --upgrade setuptools wheel &&\
-        python -m pip install -r requirements.txt &&\
-        python -m pip install -e .
-        [ "$?" != "0" ] && exit 1
-        echo '
-        cwm-worker-deployment:
-          type: minio
-          namespace: test1
-        minio:
-          createPullSecret: |
-            '${PULL_SECRET}'
-        ' | cwm_worker_deployment deploy
-        [ "$?" != "0" ] && exit 1
-        ELAPSED_SECONDS=0
-        while ! cwm_worker_deployment is_ready test1 minio; do
-          sleep 1 && ELAPSED_SECONDS="$(expr $ELAPSED_SECONDS + 1)"
-          [ "${ELAPSED_SECONDS}" == "30" ] && echo watied too long for deployment to be ready && exit 1
-        done
-        cwm_worker_deployment details test1 minio &&\
-        cwm_worker_deployment history test1 minio &&\
-        [ "$(cwm_worker_deployment get_hostname test1 minio)" == "minio.test1.svc.cluster.local" ] &&\
-        cwm_worker_deployment delete test1 minio --delete-namespace
-        [ "$?" != "0" ] && exit 1
-        echo waiting for namespace to be deleted
-        while kubectl get ns test1; do sleep 1; done
+        PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}' &&\
+        tests/run_tests.sh &&\
         echo "${CWM_WORKER_OPERATOR_DEPLOY_KEY}" > cwm_worker_operator_deploy_key &&\
         chmod 400 cwm_worker_operator_deploy_key &&\
         export GIT_SSH_COMMAND="ssh -i $(pwd)/cwm_worker_operator_deploy_key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" &&\
