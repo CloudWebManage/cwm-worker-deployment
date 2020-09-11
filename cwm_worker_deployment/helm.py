@@ -37,9 +37,11 @@ def get_latest_version(repo_url, chart_name):
 
 
 # example timeout string: "5m0s"
-def upgrade(release_name, chart_name, namespace_name, version, values, atomic_timeout_string=None, dry_run=False, chart_path=None):
+def upgrade(release_name, chart_name, namespace_name, version, values, atomic_timeout_string=None, dry_run=False, chart_path=None, raise_failed_download_exception=False):
     with tempfile.NamedTemporaryFile("w") as f:
         yaml.safe_dump(values, f)
+        if dry_run:
+            print(json.dumps(values))
         cmd = [
             "helm", "upgrade", "--install", "--namespace", namespace_name, "--version", version, "-f", f.name,
             release_name, chart_path if chart_path else chart_name
@@ -51,11 +53,12 @@ def upgrade(release_name, chart_name, namespace_name, version, values, atomic_ti
         result = subprocess.run(cmd, stderr=subprocess.PIPE)
         if result.returncode == 0:
             return True
+        elif raise_failed_download_exception:
+            raise Exception(result.stderr.decode())
+        elif result.stderr.decode().startswith('Error: failed to download'):
+            return False
         else:
-            if result.stderr.decode().startswith('Error: failed to download'):
-                return False
-            else:
-                raise Exception(result.stderr.decode())
+            raise Exception(result.stderr.decode())
 
 
 def delete(namespace_name, release_name, timeout_string=None, dry_run=False):

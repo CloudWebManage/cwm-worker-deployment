@@ -20,6 +20,7 @@ def init(dry_run=False):
 
 # example timeout string: "5m0s"
 def deploy(spec, dry_run=False, atomic_timeout_string=None):
+    spec = {**spec}
     deployment_spec = spec.pop('cwm-worker-deployment')
     deployment_type = deployment_spec["type"]
     assert deployment_type in config.DEPLOYMENT_TYPES, 'unknown deployment type: {}'.format(deployment_type)
@@ -34,13 +35,10 @@ def deploy(spec, dry_run=False, atomic_timeout_string=None):
         )
     chart_name = "cwm-worker-deployment-{deployment_type}/cwm-worker-deployment-{deployment_type}".format(deployment_type=deployment_type)
     namespace.init(namespace_name, dry_run=dry_run)
-    helm_upgrade = lambda: helm.upgrade(release_name, chart_name, namespace_name, version, spec, dry_run=dry_run, atomic_timeout_string=atomic_timeout_string, chart_path=chart_path)
-    if not helm_upgrade():
-        if dry_run:
-            raise Exception()
-        else:
-            init()
-            helm_upgrade()
+    helm_upgrade = lambda raise_failed_download_exception: helm.upgrade(release_name, chart_name, namespace_name, version, spec, dry_run=dry_run, atomic_timeout_string=atomic_timeout_string, chart_path=chart_path, raise_failed_download_exception=raise_failed_download_exception)
+    if not helm_upgrade(False):
+        init()
+        helm_upgrade(True)
 
 
 # example timeout string: "5m0s"
