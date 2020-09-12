@@ -20,6 +20,7 @@ jobs:
         bin/minikube_wait.sh &&\
         . venv/bin/activate &&\
         export PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}' &&\
+        export CWM_WORKER_DEPLOYMENT_HELM_CACHE_DIR="$(pwd)/.cwm_worker_deployment_helm_cache" &&\
         tests/run_tests.sh &&\
         echo "${CWM_WORKER_OPERATOR_DEPLOY_KEY}" > cwm_worker_operator_deploy_key &&\
         chmod 400 cwm_worker_operator_deploy_key &&\

@@ -11,13 +11,6 @@ def _is_ready_deployment(namespace_name, deployment_type, readiness_check):
     return namespace.is_ready_deployment(namespace_name, readiness_check['deployment_name'])
 
 
-def init(dry_run=False):
-    for deployment_type in config.DEPLOYMENT_TYPES.keys():
-        chart_name = "cwm-worker-deployment-{}".format(deployment_type)
-        helm.repo_add(chart_name, "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/{}".format(chart_name), dry_run=dry_run)
-    helm.repo_update()
-
-
 # example timeout string: "5m0s"
 def deploy(spec, dry_run=False, atomic_timeout_string=None):
     spec = {**spec}
@@ -33,12 +26,12 @@ def deploy(spec, dry_run=False, atomic_timeout_string=None):
             "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-{}".format(deployment_type),
             'cwm-worker-deployment-{}'.format(deployment_type)
         )
-    chart_name = "cwm-worker-deployment-{deployment_type}/cwm-worker-deployment-{deployment_type}".format(deployment_type=deployment_type)
+    chart_repo = "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-{}".format(deployment_type)
+    repo_name = "cwm-worker-deployment-{}".format(deployment_type)
+    chart_name = "cwm-worker-deployment-{deployment_type}".format(deployment_type=deployment_type)
     namespace.init(namespace_name, dry_run=dry_run)
-    helm_upgrade = lambda raise_failed_download_exception: helm.upgrade(release_name, chart_name, namespace_name, version, spec, dry_run=dry_run, atomic_timeout_string=atomic_timeout_string, chart_path=chart_path, raise_failed_download_exception=raise_failed_download_exception)
-    if not helm_upgrade(False):
-        init()
-        helm_upgrade(True)
+    helm.upgrade(release_name, repo_name, chart_name, namespace_name, version, spec, dry_run=dry_run, atomic_timeout_string=atomic_timeout_string,
+                 chart_path=chart_path, chart_repo=chart_repo)
 
 
 # example timeout string: "5m0s"
