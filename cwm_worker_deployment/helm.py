@@ -9,22 +9,6 @@ from ruamel import yaml
 from cwm_worker_deployment import config
 
 
-def repo_add(chart_name, repo_url, dry_run=False):
-    cmd = ["helm", "repo", "add", chart_name, repo_url]
-    if dry_run:
-        print(" ".join(cmd))
-    else:
-        subprocess.check_call(cmd)
-
-
-def repo_update(dry_run=False):
-    cmd = ["helm", "repo", "update"]
-    if dry_run:
-        print(" ".join(cmd))
-    else:
-        subprocess.check_call(cmd)
-
-
 def get_latest_version(repo_url, chart_name):
     repo_index = yaml.safe_load(requests.get("{}/index.yaml".format(repo_url)).content)
     latest_entry_datetime = None
@@ -39,14 +23,19 @@ def get_latest_version(repo_url, chart_name):
     return latest_entry_version
 
 
+def chart_cache_init(chart_name, version, chart_repo):
+    chart_cache_path = os.path.join(config.CWM_WORKER_DEPLOYMENT_HELM_CACHE_DIR, chart_name, version)
+    if not os.path.exists(chart_cache_path):
+        cmd = ["helm", "pull", chart_name, "--repo", chart_repo, "--untar", "--untardir", chart_cache_path, "--version",
+               version]
+        subprocess.check_call(cmd)
+    return os.path.join(chart_cache_path, chart_name)
+
+
 # example timeout string: "5m0s"
 def upgrade(release_name, repo_name, chart_name, namespace_name, version, values, atomic_timeout_string=None, dry_run=False, chart_path=None, chart_repo=None):
     if not chart_path:
-        chart_cache_path = os.path.join(config.CWM_WORKER_DEPLOYMENT_HELM_CACHE_DIR, chart_name, version)
-        if not os.path.exists(chart_cache_path):
-            cmd = ["helm", "pull", chart_name, "--repo", chart_repo, "--untar", "--untardir", chart_cache_path, "--version", version]
-            subprocess.check_call(cmd)
-        chart_path = os.path.join(chart_cache_path, chart_name)
+        chart_path = chart_cache_init(chart_name, version, chart_repo)
     with tempfile.NamedTemporaryFile("w") as f:
         yaml.safe_dump(values, f)
         if dry_run:

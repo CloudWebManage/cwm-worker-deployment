@@ -11,6 +11,11 @@ def _is_ready_deployment(namespace_name, deployment_type, readiness_check):
     return namespace.is_ready_deployment(namespace_name, readiness_check['deployment_name'])
 
 
+def chart_cache_init(chart_name, version, deployment_type):
+    chart_repo = "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-{}".format(deployment_type)
+    return helm.chart_cache_init(chart_name, version, chart_repo)
+
+
 # example timeout string: "5m0s"
 def deploy(spec, dry_run=False, atomic_timeout_string=None):
     spec = {**spec}
