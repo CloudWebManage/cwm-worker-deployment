@@ -45,7 +45,8 @@ def upgrade(release_name, repo_name, chart_name, namespace_name, version, values
             cmd += ["--atomic", "--timeout", atomic_timeout_string]
         if dry_run:
             cmd += ["--dry-run"]
-        subprocess.check_call(cmd)
+        result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        return result.returncode, result.stdout.decode(), result.stderr.decode()
 
 
 def delete(namespace_name, release_name, timeout_string=None, dry_run=False):

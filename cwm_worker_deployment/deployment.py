@@ -35,8 +35,14 @@ def deploy(spec, dry_run=False, atomic_timeout_string=None):
     repo_name = "cwm-worker-deployment-{}".format(deployment_type)
     chart_name = "cwm-worker-deployment-{deployment_type}".format(deployment_type=deployment_type)
     namespace.init(namespace_name, dry_run=dry_run)
-    helm.upgrade(release_name, repo_name, chart_name, namespace_name, version, spec, dry_run=dry_run, atomic_timeout_string=atomic_timeout_string,
-                 chart_path=chart_path, chart_repo=chart_repo)
+    returncode, stdout, stderr = helm.upgrade(
+        release_name, repo_name, chart_name, namespace_name, version, spec, dry_run=dry_run,
+        atomic_timeout_string=atomic_timeout_string, chart_path=chart_path, chart_repo=chart_repo
+    )
+    if returncode == 0:
+        return stdout
+    else:
+        raise Exception("Helm upgrade failed (returncode={})\nsdterr=\n{}\nstdout=\n{}".format(returncode, stdout, stderr))
 
 
 # example timeout string: "5m0s"
