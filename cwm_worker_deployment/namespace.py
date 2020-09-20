@@ -45,3 +45,7 @@ def is_ready_deployment(namespace_name, deployment_name):
         return appsV1Api.read_namespaced_deployment_status(deployment_name, namespace_name).status.ready_replicas > 0
     except Exception:
         return False
+
+
+def delete_deployment(namespace_name, deployment_name):
+    appsV1Api.delete_namespaced_deployment(deployment_name, namespace_name)

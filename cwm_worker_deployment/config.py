@@ -12,6 +12,12 @@ DEPLOYMENT_TYPES = {
                 "type": "deployment",
                 "deployment_name": "minio"
             }
+        ],
+        "deletions": [
+            {
+                "type": "deployment",
+                "deployment_name": "minio"
+            }
         ]
     }
 }
