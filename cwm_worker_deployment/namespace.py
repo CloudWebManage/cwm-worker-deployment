@@ -49,3 +49,17 @@ def is_ready_deployment(namespace_name, deployment_name):
 
 def delete_deployment(namespace_name, deployment_name):
     appsV1Api.delete_namespaced_deployment(deployment_name, namespace_name)
+
+
+def create_service(namespace_name, service):
+    service_body = {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {"name": service["name"]},
+        "spec": service["spec"]
+    }
+    try:
+        codeV1Api.create_namespaced_service(namespace_name, service_body)
+    except ApiException as e:
+        if e.reason != "Conflict":
+            raise

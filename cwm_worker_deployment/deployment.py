@@ -20,8 +20,17 @@ def chart_cache_init(chart_name, version, deployment_type):
     return helm.chart_cache_init(chart_name, version, chart_repo)
 
 
+def init(spec):
+    spec = {**spec}
+    deployment_spec = spec.pop('cwm-worker-deployment')
+    deployment_type = deployment_spec["type"]
+    assert deployment_type in config.DEPLOYMENT_TYPES, 'unknown deployment type: {}'.format(deployment_type)
+    namespace_name = deployment_spec['namespace']
+    namespace.init(namespace_name)
+
+
 # example timeout string: "5m0s"
-def deploy(spec, dry_run=False, atomic_timeout_string=None):
+def deploy(spec, dry_run=False, atomic_timeout_string=None, with_init=True):
     spec = {**spec}
     deployment_spec = spec.pop('cwm-worker-deployment')
     deployment_type = deployment_spec["type"]
@@ -38,7 +47,8 @@ def deploy(spec, dry_run=False, atomic_timeout_string=None):
     chart_repo = "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-{}".format(deployment_type)
     repo_name = "cwm-worker-deployment-{}".format(deployment_type)
     chart_name = "cwm-worker-deployment-{deployment_type}".format(deployment_type=deployment_type)
-    namespace.init(namespace_name, dry_run=dry_run)
+    if with_init:
+        namespace.init(namespace_name, dry_run=dry_run)
     returncode, stdout, stderr = helm.upgrade(
         release_name, repo_name, chart_name, namespace_name, version, spec, dry_run=dry_run,
         atomic_timeout_string=atomic_timeout_string, chart_path=chart_path, chart_repo=chart_repo
@@ -47,6 +57,16 @@ def deploy(spec, dry_run=False, atomic_timeout_string=None):
         return stdout
     else:
         raise Exception("Helm upgrade failed (returncode={})\nsdterr=\n{}\nstdout=\n{}".format(returncode, stdout, stderr))
+
+
+def deploy_external_service(spec):
+    spec = {**spec}
+    deployment_spec = spec.pop('cwm-worker-deployment')
+    deployment_type = deployment_spec["type"]
+    assert deployment_type in config.DEPLOYMENT_TYPES, 'unknown deployment type: {}'.format(deployment_type)
+    namespace_name = deployment_spec['namespace']
+    for service in config.DEPLOYMENT_TYPES[deployment_type]["external_services"]:
+        namespace.create_service(namespace_name, service)
 
 
 # example timeout string: "5m0s"

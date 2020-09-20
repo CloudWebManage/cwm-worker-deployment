@@ -18,6 +18,20 @@ DEPLOYMENT_TYPES = {
                 "type": "deployment",
                 "deployment_name": "minio"
             }
+        ],
+        "external_services": [
+            {
+                "name": "minio",
+                "spec": {
+                    "ports": [
+                        {"name": "8080", "port": 8080},
+                        {"name": "8443", "port": 8443}
+                    ],
+                    "selector": {
+                        "app": "minio"
+                    }
+                }
+            }
         ]
     }
 }
