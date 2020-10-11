@@ -1,3 +1,5 @@
+from ruamel import yaml
+
 from cwm_worker_deployment import config
 from cwm_worker_deployment import helm
 from cwm_worker_deployment import namespace
@@ -69,6 +71,21 @@ def deploy_external_service(spec):
         namespace.create_service(namespace_name, service)
 
 
+def deploy_extra_objects(spec, extra_objects):
+    namespace_name = spec['cwm-worker-deployment']['namespace']
+    objects = []
+    for object in extra_objects:
+        objects.append({
+            'apiVersion': object['apiVersion'],
+            'kind': object['kind'],
+            'metadata': {
+                'name': object['name']
+            },
+            'spec': yaml.safe_load(object['spec'])
+        })
+    namespace.create_objects(namespace_name, objects)
+
+
 # example timeout string: "5m0s"
 def delete(namespace_name, deployment_type, timeout_string=None, dry_run=False, delete_namespace=False, delete_helm=True):
     release_name = _get_release_name(namespace_name, deployment_type)
@@ -114,3 +131,45 @@ def history(namespace_name, deployment_type):
 
 def get_hostname(namespace_name, deployment_type):
     return config.DEPLOYMENT_TYPES[deployment_type]["hostname"].format(namespace_name=namespace_name)
+
+
+if __name__ == '__main__':
+    import sys
+    if sys.argv[1] == 'test_deploy_extra_objects':
+        namespace_name = sys.argv[2]
+        mountScript = 'true'
+        unmountScript = 'true'
+        deploy_extra_objects({
+            "cwm-worker-deployment": {
+                "namespace": namespace_name
+            }
+        }, [
+            {
+                "apiVersion": "v1",
+                "kind": "PersistentVolumeClaim",
+                "name": namespace_name,
+                "spec": """
+accessModes: ["ReadWriteMany"]
+resources: {"requests": {"storage": "1Ti"}}
+storageClassName: ""
+volumeMode: "Filesystem"
+volumeName: "__NAMESPACE_NAME__"
+""".replace('__NAMESPACE_NAME__', namespace_name)
+            },
+            {
+                "apiVersion": "v1",
+                "kind": "PersistentVolume",
+                "name": namespace_name,
+                "spec": """
+accessModes: ["ReadWriteMany"]
+capacity: {"storage": "1Ti"}
+persistentVolumeReclaimPolicy: Delete
+csi:
+  driver: "shbs.csi.kamatera.com"
+  volumeHandle: "__NAMESPACE_NAME__"
+  volumeAttributes:
+    mountScript: '__MOUNTSCRIPT__'
+    unmountScript: '__UNMOUNTSCRIPT__'
+""".replace('__MOUNTSCRIPT__', mountScript).replace('__UNMOUNTSCRIPT__', unmountScript).replace('__NAMESPACE_NAME__', namespace_name)
+            }
+        ])

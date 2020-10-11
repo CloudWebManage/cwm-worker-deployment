@@ -1,5 +1,5 @@
 import urllib3
-from kubernetes import client, config
+from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
 
 
@@ -15,6 +15,7 @@ except config.ConfigException:
 
 codeV1Api = client.CoreV1Api()
 appsV1Api = client.AppsV1Api()
+apiClient = client.ApiClient()
 
 
 def init(namespace_name, dry_run=False):
@@ -63,3 +64,12 @@ def create_service(namespace_name, service):
     except ApiException as e:
         if e.reason != "Conflict":
             raise
+
+
+def create_objects(namespace_name, objects):
+    for object in objects:
+        try:
+            utils.create_from_dict(apiClient, object, namespace=namespace_name)
+        except utils.FailToCreateError as e:
+            if any([a.reason != "AlreadyExists" and a.reason != "Conflict" for a in e.api_exceptions]):
+                raise
