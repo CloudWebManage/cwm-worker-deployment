@@ -33,12 +33,13 @@ def chart_cache_init(chart_name, version, chart_repo):
 
 
 # example timeout string: "5m0s"
-def upgrade(release_name, repo_name, chart_name, namespace_name, version, values, atomic_timeout_string=None, dry_run=False, chart_path=None, chart_repo=None):
+def upgrade(release_name, repo_name, chart_name, namespace_name, version, values, atomic_timeout_string=None,
+            dry_run=False, chart_path=None, chart_repo=None, dry_run_debug=True):
     if not chart_path:
         chart_path = chart_cache_init(chart_name, version, chart_repo)
     with tempfile.NamedTemporaryFile("w") as f:
         yaml.safe_dump(values, f)
-        if dry_run:
+        if dry_run and dry_run_debug:
             print(json.dumps(values))
         cmd = ["helm", "upgrade", "--install", "--namespace", namespace_name, "--version", version, "-f", f.name, release_name, chart_path]
         if atomic_timeout_string:

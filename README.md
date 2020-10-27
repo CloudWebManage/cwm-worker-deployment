@@ -22,7 +22,28 @@ Install the Python module
 venv/bin/python -m pip install -e .
 ```
 
-### Usage
+### Start infrastructure
+
+start a Minikube cluster
+
+```
+bin/minikube_start.sh && bin/minikube_wait.sh
+``` 
+
+Make sure you are connected to the minikube cluster
+
+```
+kubectl get nodes
+```
+
+Set secret env vars (you can get them from Jenkins):
+
+```
+export PACKAGES_READER_GITHUB_USER=
+export PACKAGES_READER_GITHUB_TOKEN=
+```
+
+### Run tests
 
 Activate the virtualenv
 
@@ -30,100 +51,22 @@ Activate the virtualenv
 . venv/bin/activate
 ```
 
-Make sure you are connected to a local / testing Kubernetes cluster before running any commands
-
-Debug a workload - will only print the actions that will be performed
+Run all tests
 
 ```
-echo '
-cwm-worker-deployment:
-  type: minio
-  namespace: example007--com
-  version: 0.0.0
-
-minio:
-  volumes:
-    storage: |
-      persistentVolumeClaim:
-        claimName: example007--com
-    cache: |
-      hostPath:
-        path: /remote/cache/example007--com
-        type: DirectoryOrCreate
-
-extraObjects:
-- apiVersion: v1
-  kind: PersistentVolume
-  name: example007--com
-  spec: |
-    accessModes:
-    - ReadWriteMany
-    capacity:
-      storage: 1Ti
-    csi:
-      driver: shbs.csi.kamatera.com
-      volumeAttributes:
-        foo: bar
-        baz: bax
-      volumeHandle: example007--com
-    persistentVolumeReclaimPolicy: Retain
-    volumeMode: Filesystem
-- apiVersion: v1
-  kind: PersistentVolumeClaim
-  name: example007--com
-  spec: |
-    accessModes:
-    - ReadWriteMany
-    resources:
-      requests:
-        storage: 1Ti
-    storageClassName: ""
-    volumeMode: Filesystem
-    volumeName: example007--com
-' | cwm_worker_deployment deploy --dry-run
+pytest
 ```
 
-Set your personal GitHub access token in env vars
+Run a tests with full output, by specifying part of the test method name
 
 ```
-PACKAGES_READER_GITHUB_USER=
-PACKAGES_READER_GITHUB_TOKEN=
+pytest -sk test_history
 ```
 
-Set the pull secret in env var
+Or by specifying the specific test file name:
 
 ```
-PULL_SECRET='{"auths":{"docker.pkg.github.com":{"auth":"'"$(echo -n "${PACKAGES_READER_GITHUB_USER}:${PACKAGES_READER_GITHUB_TOKEN}" | base64 -w0)"'"}}}'
+pytest -s tests/test_helm.py
 ```
 
-Deploy a workload from local helm chart
-
-Following example assumes you have the other chart at `../cwm-worker-deployment-minio/helm`
-
-```
-echo '
-cwm-worker-deployment:
-  type: minio
-  namespace: test2
-  chart-path: ../cwm-worker-deployment-minio/helm
-
-minio:
-  createPullSecret: |
-    '${PULL_SECRET}'
-' | cwm_worker_deployment deploy
-```
-
-Deploy a workload from the remote repository using latest version
-
-Deploy
-
-```
-echo '
-cwm-worker-deployment:
-  type: minio
-  namespace: example007--com
-
-minio:
-  createPullSecret: "'"${PULL_SECRET}"'"
-' | cwm_worker_deployment deploy
-```
+Pytest has many options, check the help message or [pytest documentation](https://docs.pytest.org/en/latest/) for details
