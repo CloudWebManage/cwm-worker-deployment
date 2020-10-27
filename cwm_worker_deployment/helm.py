@@ -76,3 +76,16 @@ def get_release_details(namespace_name, release_name):
 def get_release_history(namespace_name, release_name):
     cmd = ["helm", "history", "--namespace", namespace_name, release_name, "-o", "json"]
     return json.loads(subprocess.check_output(cmd))
+
+
+def iterate_all_releases(release_name, max_per_page=256):
+    assert max_per_page <= 256
+    offset = 0
+    while True:
+        cmd = ["helm", "ls", "--all-namespaces", "--max", str(max_per_page), "--offset", str(offset), "--filter", release_name, "-o", "json"]
+        items = json.loads(subprocess.check_output(cmd))
+        if len(items) == 0:
+            break
+        for item in items:
+            yield item
+            offset += 1
