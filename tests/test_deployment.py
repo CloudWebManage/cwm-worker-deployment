@@ -12,6 +12,26 @@ from .mocks.namespace import MockNamespace
 from .mocks.helm import MockHelm
 
 
+def _set_namespace_metrics(namespace):
+    for i, metrics_check in enumerate(config.DEPLOYMENT_TYPES['minio']['metrics_checks']):
+        if metrics_check['type'] == 'namespace_prometheus_rate_query':
+            namespace._metrics_check_prometheus_rate_query_returnvalues['test-{}'.format(metrics_check['query'])] = i
+
+
+EXPECTED_NAMESPACE_METRICS = {
+    'network_receive_bytes_total_last_10m': 1,
+    'network_receive_bytes_total_last_12h': 6,
+    'network_receive_bytes_total_last_1h': 3,
+    'network_receive_bytes_total_last_24h': 7,
+    'network_receive_bytes_total_last_30m': 2,
+    'network_receive_bytes_total_last_3h': 4,
+    'network_receive_bytes_total_last_48h': 8,
+    'network_receive_bytes_total_last_5m': 0,
+    'network_receive_bytes_total_last_6h': 5,
+    'network_receive_bytes_total_last_72h': 9,
+    'network_receive_bytes_total_last_96h': 10
+}
+
 def test_chart_cache_init():
     helm = MockHelm()
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -145,6 +165,7 @@ def test_is_ready():
 
 def test_details():
     namespace = MockNamespace()
+    _set_namespace_metrics(namespace)
     helm = MockHelm()
     helm._release_details_returnvalues['test-minio-test'] = {'app_version': 'app_version', 'chart': 'chart', 'revision': 'revision', 'status': 'status', 'updated': 'updated'}
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == {'name': 'minio-test',
@@ -153,7 +174,8 @@ def test_details():
                                                                                            'chart': 'chart',
                                                                                            'revision': 'revision',
                                                                                            'status': 'status',
-                                                                                           'updated': 'updated'}
+                                                                                           'updated': 'updated',
+                                                                                           'metrics': EXPECTED_NAMESPACE_METRICS}
     namespace._is_ready_deployment_returnvalues['test-minio'] = True
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == {'name': 'minio-test',
                                                                                            'ready': True,
@@ -161,7 +183,8 @@ def test_details():
                                                                                            'chart': 'chart',
                                                                                            'revision': 'revision',
                                                                                            'status': 'status',
-                                                                                           'updated': 'updated'}
+                                                                                           'updated': 'updated',
+                                                                                           'metrics': EXPECTED_NAMESPACE_METRICS}
 
 
 def test_history():
@@ -174,3 +197,7 @@ def test_get_hostname():
     assert deployment.get_hostname('test', 'minio') == 'minio.test.svc.cluster.local'
 
 
+def test_get_metrics():
+    namespace = MockNamespace()
+    _set_namespace_metrics(namespace)
+    assert deployment.get_metrics('test', 'minio', namespace_lib=namespace) == EXPECTED_NAMESPACE_METRICS

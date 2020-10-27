@@ -13,6 +13,10 @@ def _is_ready_deployment(namespace_name, deployment_type, readiness_check, names
     return namespace_lib.is_ready_deployment(namespace_name, readiness_check['deployment_name'])
 
 
+def _get_metrics_namespace_prometheus_rate_query(namespace_name, deployment_type, metrics_check, namespace_lib):
+    return namespace_lib.metrics_check_prometheus_rate_query(namespace_name, metrics_check['query'])
+
+
 def _delete_deployment(namespace_name, deployment_type, deletion, namespace_lib):
     return namespace_lib.delete_deployment(namespace_name, deletion['deployment_name'])
 
@@ -126,6 +130,17 @@ def is_ready(namespace_name, deployment_type, namespace_lib=None):
     return True
 
 
+def get_metrics(namespace_name, deployment_type, namespace_lib=None):
+    if not namespace_lib:
+        namespace_lib = namespace
+    metrics = {}
+    for metrics_check in config.DEPLOYMENT_TYPES[deployment_type]["metrics_checks"]:
+        metrics[metrics_check['name']] = {
+            "namespace_prometheus_rate_query": _get_metrics_namespace_prometheus_rate_query
+        }[metrics_check["type"]](namespace_name, deployment_type, metrics_check, namespace_lib)
+    return metrics
+
+
 def details(namespace_name, deployment_type, helm_lib=None, namespace_lib=None):
     if not helm_lib:
         helm_lib = helm
@@ -140,7 +155,8 @@ def details(namespace_name, deployment_type, helm_lib=None, namespace_lib=None):
         "chart": release_details["chart"],
         "revision": release_details["revision"],
         "status": release_details["status"],
-        "updated": release_details["updated"]
+        "updated": release_details["updated"],
+        "metrics": get_metrics(namespace_name, deployment_type, namespace_lib=namespace_lib),
     }
 
 

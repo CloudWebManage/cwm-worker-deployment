@@ -9,7 +9,7 @@ from glob import glob
 from cwm_worker_deployment import helm
 from cwm_worker_deployment import config
 
-from .common import init_wait_namespace, PULL_SECRET, wait_for_func
+from .common import init_wait_namespace, PULL_SECRET, wait_for_func, init_wait_deploy_helm
 
 
 def test_get_latest_version():
@@ -42,41 +42,7 @@ def test_chart_cache_init():
 
 def test_release():
     namespace_name = 'cwdtest'
-    init_wait_namespace(namespace_name, delete=True)
-    latest_version = helm.get_latest_version(
-        'https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-minio',
-        'cwm-worker-deployment-minio'
-    )
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config.CWM_WORKER_DEPLOYMENT_HELM_CACHE_DIR = tmpdir
-        values = {
-            'cwm-worker-deployment': {
-                'type': 'minio',
-                'namespace': namespace_name
-            },
-            'minio': {
-                'createPullSecret': PULL_SECRET,
-                'service': {
-                    'enabled': False
-                }
-            },
-            'extraObjects': []
-        }
-        args = ['minio', 'minio', 'cwm-worker-deployment-minio', namespace_name, latest_version, values]
-        kwargs = {"chart_repo": 'https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-minio'}
-        returncode, stdout, stderr = helm.upgrade(*args, dry_run=True, dry_run_debug=False, **kwargs)
-        assert returncode == 0
-        assert stderr.strip() == ""
-        assert "NAME: minio" in stdout
-        assert "image: docker.pkg.github.com/cloudwebmanage/cwm-worker-deployment-minio/minio" in stdout
-        returncode, stdout, stderr = helm.upgrade(*args, **kwargs)
-        assert returncode == 0
-        assert stderr.strip() == ""
-        assert 'Release "minio" does not exist. Installing it now.' in stdout
-        wait_for_func(
-            lambda: ['{name}-{status}'.format(**r) for r in json.loads(subprocess.getstatusoutput('helm -n {} ls -o json'.format(namespace_name))[1])],
-            ['minio-deployed'], 30, 'waited too long for release to be deployed'
-        )
+    with init_wait_deploy_helm(namespace_name) as tmpdir:
         release_details = helm.get_release_details(namespace_name, 'minio')
         assert set(release_details.keys()) == {'name', 'namespace', 'revision', 'updated', 'status', 'chart', 'app_version'}
         assert release_details['name'] == 'minio'

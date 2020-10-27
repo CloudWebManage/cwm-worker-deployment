@@ -43,6 +43,12 @@ export PACKAGES_READER_GITHUB_USER=
 export PACKAGES_READER_GITHUB_TOKEN=
 ```
 
+Deploy a testing instance of Prometheus on the minikube cluster and wait for it to be ready 
+
+```
+bin/prometheus_deploy_wait.sh
+```
+
 ### Run tests
 
 Activate the virtualenv

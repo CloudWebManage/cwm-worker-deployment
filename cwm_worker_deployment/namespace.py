@@ -1,6 +1,9 @@
 import urllib3
+import requests
 from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
+
+import cwm_worker_deployment.config
 
 
 urllib3.disable_warnings()
@@ -77,3 +80,20 @@ def create_objects(namespace_name, objects):
         except utils.FailToCreateError as e:
             if any([a.reason != "AlreadyExists" and a.reason != "Conflict" for a in e.api_exceptions]):
                 raise
+
+
+def metrics_check_prometheus_rate_query(namespace_name, query, debug=False):
+    query = query.replace("__NAMESPACE_NAME__", namespace_name)
+    url = cwm_worker_deployment.config.PROMETHEUS_URL.strip("/") + "/api/v1/query"
+    params = {"query": query}
+    if debug:
+        print(url)
+        print(params)
+    res = requests.get(url, params=params).json()
+    if debug:
+        print(res)
+    value = 0.0
+    if res['status'] == 'success' and res['data']['resultType'] == 'vector':
+        for metric in res['data']['result']:
+            value += float(metric['value'][1])
+    return value
