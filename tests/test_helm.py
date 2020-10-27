@@ -9,7 +9,7 @@ from glob import glob
 from cwm_worker_deployment import helm
 from cwm_worker_deployment import config
 
-from .common import init_wait_namespace, PULL_SECRET, wait_for_func, init_wait_deploy_helm
+from .common import wait_for_func, init_wait_deploy_helm
 
 
 def test_get_latest_version():
