@@ -130,29 +130,39 @@ def test_create_objects():
 @pytest.mark.filterwarnings("ignore:Unverified HTTPS request.*")
 def test_metrics_check_prometheus_rate_query():
     namespace_name = 'cwdtest'
-    with init_wait_deploy_helm(namespace_name) as tmpdir:
-        print("Waiting for pods to be running...")
-        wait_for_func(lambda: subprocess.getstatusoutput('kubectl -n cwdtest get pods | grep Running | wc -l')[1], "1", 60,
-                      "waited too long for pods to be running")
-        print("Starting port forwards")
-        http = subprocess.Popen('exec kubectl -n {} port-forward deployment/minio 8080:8080'.format(namespace_name), shell=True)
-        https = subprocess.Popen('exec kubectl -n {} port-forward deployment/minio 8443:8443'.format(namespace_name), shell=True)
+    prompf = subprocess.Popen('exec kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090', shell=True)
+    try:
         time.sleep(2)
-        try:
-            for i in range(10):
-                requests.get('http://localhost:8080/minio/login', headers={"User-Agent": "Mozilla"}, timeout=5)
-                requests.get('https://localhost:8443/minio/login', headers={"User-Agent": "Mozilla"}, timeout=5, verify=False)
-        finally:
-            http.terminate()
-            https.terminate()
-        prompf = subprocess.Popen('exec kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090', shell=True)
-        print("Sleeping 20 seconds to allow metrics to be gathered")
-        time.sleep(20)
-        try:
+        assert namespace.metrics_check_prometheus_rate_query(
+            "invalid--namespace",
+            config.DEPLOYMENT_TYPES['minio']['metrics_checks'][0]['query'],
+            debug=True
+        ) == 0.0
+        with init_wait_deploy_helm(namespace_name) as tmpdir:
+            print("Waiting for pods to be running...")
+            wait_for_func(lambda: subprocess.getstatusoutput('kubectl -n cwdtest get pods | grep Running | wc -l')[1], "1", 60,
+                          "waited too long for pods to be running")
+            print("Starting port forwards")
+            http = subprocess.Popen('exec kubectl -n {} port-forward deployment/minio 8080:8080'.format(namespace_name), shell=True)
+            https = subprocess.Popen('exec kubectl -n {} port-forward deployment/minio 8443:8443'.format(namespace_name), shell=True)
+            time.sleep(2)
+            try:
+                for i in range(10):
+                    requests.get('http://localhost:8080/minio/login', headers={"User-Agent": "Mozilla"}, timeout=5)
+                    requests.get('https://localhost:8443/minio/login', headers={"User-Agent": "Mozilla"}, timeout=5, verify=False)
+            finally:
+                http.terminate()
+                https.terminate()
+            print("Sleeping 20 seconds to allow metrics to be gathered")
+            time.sleep(20)
             assert namespace.metrics_check_prometheus_rate_query(
                 namespace_name,
                 config.DEPLOYMENT_TYPES['minio']['metrics_checks'][0]['query'],
                 debug=True
-            ) > 100.0
-        finally:
-            prompf.terminate()
+            ) > 500.0
+            print("Sleeping 2 minutes to check no value for the network metrics..")
+            time.sleep(120)
+            query = config.DEPLOYMENT_TYPES['minio']['metrics_checks'][0]['query'].replace('5m', '1m')
+            assert namespace.metrics_check_prometheus_rate_query(namespace_name, query, debug=True) < 500.0
+    finally:
+        prompf.terminate()

@@ -14,6 +14,7 @@ DEPLOYMENT_TYPES = {
             }
         ],
         "metrics_checks": [
+            # the first query must be 5m network receive, otherwise test_namespace.test_metrics_check_prometheus_rate_query will break
             *[
                 {
                     "name": "network_receive_bytes_total_last_{}".format(d),
