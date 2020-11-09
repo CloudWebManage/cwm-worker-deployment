@@ -56,3 +56,9 @@ def test_release():
             lambda: json.loads(subprocess.getstatusoutput('helm -n {} ls -o json'.format(namespace_name))[1]),
             [], 30, 'waited too long for release to be deleted'
         )
+
+
+def test_iterate_all_releases():
+    with init_wait_deploy_helm("cwdtest") as tmpdir1:
+        with init_wait_deploy_helm("cwdbest") as tmpdir2:
+            assert set([r["name"] + "-" + r["namespace"] for r in helm.iterate_all_releases("minio", max_per_page=1)]) == {"minio-cwdtest", "minio-cwdbest"}

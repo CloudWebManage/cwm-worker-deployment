@@ -32,6 +32,7 @@ EXPECTED_NAMESPACE_METRICS = {
     'network_receive_bytes_total_last_96h': 10
 }
 
+
 def test_chart_cache_init():
     helm = MockHelm()
     with tempfile.TemporaryDirectory() as tmpdir:
