@@ -56,7 +56,8 @@ def main():
         args = sys.argv[2:]
         namespace_name = args[0]
         deployment_type = args[1]
-        print(deployment.get_hostname(namespace_name, deployment_type))
+        protocol = args[2]
+        print(deployment.get_hostname(namespace_name, deployment_type, protocol))
     elif sys.argv[1] == "chart_cache_init":
         print(deployment.chart_cache_init(*sys.argv[2:]))
     else:

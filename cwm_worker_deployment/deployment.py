@@ -47,6 +47,8 @@ def deploy(spec, dry_run=False, atomic_timeout_string=None, with_init=True, name
     deployment_spec = spec.pop('cwm-worker-deployment')
     deployment_type = deployment_spec["type"]
     assert deployment_type in config.DEPLOYMENT_TYPES, 'unknown deployment type: {}'.format(deployment_type)
+    if deployment_type == 'minio':
+        spec.setdefault('minio', {})['serveSingleProtocolPerPod'] = True
     namespace_name = deployment_spec['namespace']
     release_name = _get_release_name(namespace_name, deployment_type)
     version = deployment_spec.get('version', 'latest')
@@ -167,8 +169,8 @@ def history(namespace_name, deployment_type, helm_lib=None):
     return helm_lib.get_release_history(namespace_name, release_name)
 
 
-def get_hostname(namespace_name, deployment_type):
-    return config.DEPLOYMENT_TYPES[deployment_type]["hostname"].format(namespace_name=namespace_name)
+def get_hostname(namespace_name, deployment_type, protocol):
+    return config.DEPLOYMENT_TYPES[deployment_type]["hostname"][protocol].format(namespace_name=namespace_name)
 
 
 if __name__ == '__main__':

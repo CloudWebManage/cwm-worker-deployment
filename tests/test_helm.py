@@ -61,4 +61,8 @@ def test_release():
 def test_iterate_all_releases():
     with init_wait_deploy_helm("cwdtest") as tmpdir1:
         with init_wait_deploy_helm("cwdbest") as tmpdir2:
-            assert set([r["name"] + "-" + r["namespace"] for r in helm.iterate_all_releases("minio", max_per_page=1)]) == {"minio-cwdtest", "minio-cwdbest"}
+            assert set(
+                [r["name"] + "-" + r["namespace"] for r in helm.iterate_all_releases("minio", max_per_page=1)]
+            ) == {
+                "minio-cwdtest", "minio-cwdbest"
+            }

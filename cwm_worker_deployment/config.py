@@ -6,11 +6,18 @@ PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL") or "http://localhost:9090"
 
 DEPLOYMENT_TYPES = {
     "minio": {
-        "hostname": "minio.{namespace_name}.svc.cluster.local",
+        "hostname": {
+            'http': "minio-http.{namespace_name}.svc.cluster.local",
+            'https': "minio-https.{namespace_name}.svc.cluster.local",
+        },
         "readiness_checks": [
             {
                 "type": "deployment",
-                "deployment_name": "minio"
+                "deployment_name": "minio-http"
+            },
+            {
+                "type": "deployment",
+                "deployment_name": "minio-https"
             }
         ],
         "metrics_checks": [
@@ -19,26 +26,40 @@ DEPLOYMENT_TYPES = {
                 {
                     "name": "network_receive_bytes_total_last_{}".format(d),
                     "type": "namespace_prometheus_rate_query",
-                    "query": 'rate(container_network_receive_bytes_total{namespace="__NAMESPACE_NAME__",pod=~"minio-.*"}['+d+'])'
+                    "query": 'rate(container_network_receive_bytes_total{namespace="__NAMESPACE_NAME__",pod=~"minio-(http|https)-.*"}['+d+'])'
                 } for d in ['5m', '10m', '30m', '1h', '3h', '6h', '12h', '24h', '48h', '72h', '96h']
             ],
         ],
         "deletions": [
             {
                 "type": "deployment",
-                "deployment_name": "minio"
+                "deployment_name": "minio-http"
+            },
+            {
+                "type": "deployment",
+                "deployment_name": "minio-https"
             }
         ],
         "external_services": [
             {
-                "name": "minio",
+                "name": "minio-http",
                 "spec": {
                     "ports": [
-                        {"name": "8080", "port": 8080},
+                        {"name": "8080", "port": 8080}
+                    ],
+                    "selector": {
+                        "app": "minio-http"
+                    }
+                }
+            },
+            {
+                "name": "minio-https",
+                "spec": {
+                    "ports": [
                         {"name": "8443", "port": 8443}
                     ],
                     "selector": {
-                        "app": "minio"
+                        "app": "minio-https"
                     }
                 }
             }

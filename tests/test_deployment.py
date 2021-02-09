@@ -96,18 +96,32 @@ def test_deploy_external_service():
         deployment.deploy_external_service(spec, namespace_lib=namespace)
     spec['cwm-worker-deployment']['type'] = 'minio'
     deployment.deploy_external_service(spec, namespace_lib=namespace)
-    assert namespace._create_service_calls == [{
-        'namespace_name': 'test',
-        'service': {
-            'name': 'minio',
-            'spec': {
-                'ports': [
-                    {'name': '8080', 'port': 8080}, {'name': '8443', 'port': 8443}
-                ],
-                'selector': {'app': 'minio'}
+    assert namespace._create_service_calls == [
+        {
+            'namespace_name': 'test',
+            'service': {
+                'name': 'minio-http',
+                'spec': {
+                    'ports': [
+                        {'name': '8080', 'port': 8080}
+                    ],
+                    'selector': {'app': 'minio-http'}
+                }
+            }
+        },
+        {
+            'namespace_name': 'test',
+            'service': {
+                'name': 'minio-https',
+                'spec': {
+                    'ports': [
+                        {'name': '8443', 'port': 8443}
+                    ],
+                    'selector': {'app': 'minio-https'}
+                }
             }
         }
-    }]
+    ]
 
 
 def test_deploy_extra_objects():
@@ -146,21 +160,22 @@ def test_delete():
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == []
-    assert namespace._deleted_deployments == ['test-minio']
+    assert namespace._deleted_deployments == ['test-minio-http', 'test-minio-https']
     namespace = MockNamespace()
     helm = MockHelm()
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False, delete_namespace=True)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == ['test']
-    assert namespace._deleted_deployments == ['test-minio']
+    assert namespace._deleted_deployments == ['test-minio-http', 'test-minio-https']
 
 
 def test_is_ready():
     namespace = MockNamespace()
-    namespace._is_ready_deployment_returnvalues['test-minio'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-http'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-https'] = True
     assert deployment.is_ready('test', 'minio', namespace_lib=namespace)
     namespace = MockNamespace()
-    namespace._is_ready_deployment_returnvalues['test-minio'] = False
+    namespace._is_ready_deployment_returnvalues['test-minio-http'] = False
     assert not deployment.is_ready('test', 'minio', namespace_lib=namespace)
 
 
@@ -169,23 +184,22 @@ def test_details():
     _set_namespace_metrics(namespace)
     helm = MockHelm()
     helm._release_details_returnvalues['test-minio-test'] = {'app_version': 'app_version', 'chart': 'chart', 'revision': 'revision', 'status': 'status', 'updated': 'updated'}
-    assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == {'name': 'minio-test',
-                                                                                           'ready': False,
-                                                                                           'app_version': 'app_version',
-                                                                                           'chart': 'chart',
-                                                                                           'revision': 'revision',
-                                                                                           'status': 'status',
-                                                                                           'updated': 'updated',
-                                                                                           'metrics': EXPECTED_NAMESPACE_METRICS}
-    namespace._is_ready_deployment_returnvalues['test-minio'] = True
-    assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == {'name': 'minio-test',
-                                                                                           'ready': True,
-                                                                                           'app_version': 'app_version',
-                                                                                           'chart': 'chart',
-                                                                                           'revision': 'revision',
-                                                                                           'status': 'status',
-                                                                                           'updated': 'updated',
-                                                                                           'metrics': EXPECTED_NAMESPACE_METRICS}
+    expected_deployment_details = {
+        'name': 'minio-test',
+        'ready': False,
+        'app_version': 'app_version',
+        'chart': 'chart',
+        'revision': 'revision',
+        'status': 'status',
+        'updated': 'updated',
+        'metrics': EXPECTED_NAMESPACE_METRICS
+    }
+    assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
+    namespace._is_ready_deployment_returnvalues['test-minio-http'] = True
+    assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
+    namespace._is_ready_deployment_returnvalues['test-minio-https'] = True
+    expected_deployment_details['ready'] = True
+    assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
 
 
 def test_history():
@@ -195,7 +209,8 @@ def test_history():
 
 
 def test_get_hostname():
-    assert deployment.get_hostname('test', 'minio') == 'minio.test.svc.cluster.local'
+    assert deployment.get_hostname('test', 'minio', 'http') == 'minio-http.test.svc.cluster.local'
+    assert deployment.get_hostname('test', 'minio', 'https') == 'minio-https.test.svc.cluster.local'
 
 
 def test_get_metrics():
