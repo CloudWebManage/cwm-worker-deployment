@@ -22,7 +22,16 @@ apiClient = client.ApiClient()
 
 
 def init(namespace_name, dry_run=False):
-    namespace_spec = {"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": namespace_name}}
+    namespace_spec = {
+        "apiVersion": "v1",
+        "kind": "Namespace",
+        "metadata": {
+            "name": namespace_name,
+            "labels": {
+                "cwmc-prom-servicemonitors": "allow"
+            }
+        }
+    }
     if dry_run:
         print(namespace_spec)
     else:
