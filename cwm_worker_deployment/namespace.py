@@ -16,7 +16,7 @@ except config.ConfigException:
         raise Exception("Could not configure kubernetes python client")
 
 
-codeV1Api = client.CoreV1Api()
+coreV1Api = client.CoreV1Api()
 appsV1Api = client.AppsV1Api()
 apiClient = client.ApiClient()
 
@@ -36,7 +36,7 @@ def init(namespace_name, dry_run=False):
         print(namespace_spec)
     else:
         try:
-            codeV1Api.create_namespace(namespace_spec)
+            coreV1Api.create_namespace(namespace_spec)
         except ApiException as e:
             if e.reason != "Conflict":
                 raise
@@ -47,7 +47,7 @@ def delete(namespace_name, dry_run=False):
         print("delete namespace: {}".format(namespace_name))
     else:
         try:
-            codeV1Api.delete_namespace(namespace_name)
+            coreV1Api.delete_namespace(namespace_name)
         except ApiException as e:
             if e.reason != "Not Found":
                 raise
@@ -76,7 +76,7 @@ def create_service(namespace_name, service):
         "spec": service["spec"]
     }
     try:
-        codeV1Api.create_namespaced_service(namespace_name, service_body)
+        coreV1Api.create_namespaced_service(namespace_name, service_body)
     except ApiException as e:
         if e.reason != "Conflict":
             raise
@@ -106,3 +106,18 @@ def metrics_check_prometheus_rate_query(namespace_name, query, debug=False):
         for metric in res['data']['result']:
             value += float(metric['value'][1])
     return value
+
+
+def get_kube_metrics(namespace_name):
+    metrics = {
+        'ram_requests_bytes': 0,
+        'ram_limit_bytes': 0
+    }
+    for deployment in appsV1Api.list_namespaced_deployment(namespace_name).items:
+        available_replicas = deployment.status.available_replicas
+        for container in deployment.spec.template.spec.containers:
+            if container.resources.limits:
+                metrics['ram_limit_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.limits['memory'])))
+            if container.resources.requests:
+                metrics['ram_requests_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.requests['memory'])))
+    return metrics
