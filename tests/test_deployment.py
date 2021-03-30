@@ -45,7 +45,8 @@ def test_chart_cache_init():
         shutil.rmtree(expected_chart_path, ignore_errors=True)
         chart_path = deployment.chart_cache_init('cwm-worker-deployment-minio', latest_version, 'minio')
         assert chart_path == expected_chart_path
-        assert set([os.path.basename(p) for p in glob(os.path.join(chart_path, "*"))]) == {'values.yaml', 'templates', 'Chart.yaml'}
+        assert set([os.path.basename(p) for p in glob(os.path.join(chart_path, "*"))]) == {
+            'values.yaml', 'templates', 'Chart.yaml', 'cwm-worker-logger.image'}
 
 
 def test_init():

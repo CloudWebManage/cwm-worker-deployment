@@ -37,7 +37,8 @@ def test_chart_cache_init():
             'https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-minio'
         )
         assert chart_path == expected_chart_path
-        assert set([os.path.basename(p) for p in glob(os.path.join(chart_path, "*"))]) == {'values.yaml', 'templates', 'Chart.yaml'}
+        assert set([os.path.basename(p) for p in glob(os.path.join(chart_path, "*"))]) == {
+            'values.yaml', 'templates', 'Chart.yaml', 'cwm-worker-logger.image'}
 
 
 def test_release():
