@@ -115,9 +115,11 @@ def get_kube_metrics(namespace_name):
     }
     for deployment in appsV1Api.list_namespaced_deployment(namespace_name).items:
         available_replicas = deployment.status.available_replicas
-        for container in deployment.spec.template.spec.containers:
-            if container.resources.limits:
-                metrics['ram_limit_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.limits['memory'])))
-            if container.resources.requests:
-                metrics['ram_requests_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.requests['memory'])))
+        if available_replicas:
+            for container in deployment.spec.template.spec.containers:
+                if container.resources:
+                    if container.resources.limits and container.resources.limits.get('memory'):
+                        metrics['ram_limit_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.limits['memory'])))
+                    if container.resources.requests and container.resources.requests.get('memory'):
+                        metrics['ram_requests_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.requests['memory'])))
     return metrics
