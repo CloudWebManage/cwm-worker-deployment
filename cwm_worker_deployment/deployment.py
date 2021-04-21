@@ -120,15 +120,18 @@ def delete(namespace_name, deployment_type, timeout_string=None, dry_run=False, 
         namespace_lib.delete(namespace_name, dry_run=dry_run)
 
 
-def is_ready(namespace_name, deployment_type, namespace_lib=None):
+def is_ready(namespace_name, deployment_type, namespace_lib=None, enabledProtocols=None):
     if not namespace_lib:
         namespace_lib = namespace
+    if not enabledProtocols:
+        enabledProtocols = ['http', 'https']
     for readiness_check in config.DEPLOYMENT_TYPES[deployment_type]["readiness_checks"]:
-        res = {
-            "deployment": _is_ready_deployment
-        }[readiness_check["type"]](namespace_name, deployment_type, readiness_check, namespace_lib)
-        if not res:
-            return False
+        if not readiness_check.get('protocol') or readiness_check['protocol'] in enabledProtocols:
+            res = {
+                "deployment": _is_ready_deployment
+            }[readiness_check["type"]](namespace_name, deployment_type, readiness_check, namespace_lib)
+            if not res:
+                return False
     return True
 
 

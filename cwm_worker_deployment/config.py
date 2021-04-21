@@ -13,10 +13,12 @@ DEPLOYMENT_TYPES = {
         "readiness_checks": [
             {
                 "type": "deployment",
+                'protocol': 'http',
                 "deployment_name": "minio-http"
             },
             {
                 "type": "deployment",
+                'protocol': 'https',
                 "deployment_name": "minio-https"
             }
         ],
