@@ -7,20 +7,22 @@ PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL") or "http://localhost:9090"
 DEPLOYMENT_TYPES = {
     "minio": {
         "hostname": {
-            'http': "minio-http.{namespace_name}.svc.cluster.local",
-            'https': "minio-https.{namespace_name}.svc.cluster.local",
+            'http': "nginx.{namespace_name}.svc.cluster.local",
+            'https': "nginx.{namespace_name}.svc.cluster.local",
         },
         "readiness_checks": [
             {
                 "type": "deployment",
-                'protocol': 'http',
-                "deployment_name": "minio-http"
+                "deployment_name": "minio-logger"
             },
             {
                 "type": "deployment",
-                'protocol': 'https',
-                "deployment_name": "minio-https"
-            }
+                "deployment_name": "minio"
+            },
+            {
+                "type": "deployment",
+                "deployment_name": "nginx"
+            },
         ],
         "metrics_checks": [
             # the first query must be 5m network receive, otherwise test_namespace.test_metrics_check_prometheus_rate_query will break
@@ -35,33 +37,38 @@ DEPLOYMENT_TYPES = {
         "deletions": [
             {
                 "type": "deployment",
-                "deployment_name": "minio-http"
+                "deployment_name": "minio"
             },
             {
                 "type": "deployment",
-                "deployment_name": "minio-https"
+                "deployment_name": "nginx"
+            },
+            {
+                "type": "deployment",
+                "deployment_name": "minio-logger"
             }
         ],
         "external_services": [
             {
-                "name": "minio-http",
+                "name": "minio",
                 "spec": {
                     "ports": [
                         {"name": "8080", "port": 8080}
                     ],
                     "selector": {
-                        "app": "minio-http"
+                        "app": "minio"
                     }
                 }
             },
             {
-                "name": "minio-https",
+                "name": "nginx",
                 "spec": {
                     "ports": [
-                        {"name": "8443", "port": 8443}
+                        {"name": "80", "port": 80},
+                        {"name": "443", "port": 443}
                     ],
                     "selector": {
-                        "app": "minio-https"
+                        "app": "nginx"
                     }
                 }
             }

@@ -101,24 +101,25 @@ def test_deploy_external_service():
         {
             'namespace_name': 'test',
             'service': {
-                'name': 'minio-http',
+                'name': 'minio',
                 'spec': {
                     'ports': [
                         {'name': '8080', 'port': 8080}
                     ],
-                    'selector': {'app': 'minio-http'}
+                    'selector': {'app': 'minio'}
                 }
             }
         },
         {
             'namespace_name': 'test',
             'service': {
-                'name': 'minio-https',
+                'name': 'nginx',
                 'spec': {
                     'ports': [
-                        {'name': '8443', 'port': 8443}
+                        {'name': '80', 'port': 80},
+                        {'name': '443', 'port': 443},
                     ],
-                    'selector': {'app': 'minio-https'}
+                    'selector': {'app': 'nginx'}
                 }
             }
         }
@@ -161,22 +162,23 @@ def test_delete():
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == []
-    assert namespace._deleted_deployments == ['test-minio-http', 'test-minio-https']
+    assert namespace._deleted_deployments == ['test-minio', 'test-nginx', 'test-minio-logger']
     namespace = MockNamespace()
     helm = MockHelm()
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False, delete_namespace=True)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == ['test']
-    assert namespace._deleted_deployments == ['test-minio-http', 'test-minio-https']
+    assert namespace._deleted_deployments == ['test-minio', 'test-nginx', 'test-minio-logger']
 
 
 def test_is_ready():
     namespace = MockNamespace()
-    namespace._is_ready_deployment_returnvalues['test-minio-http'] = True
-    namespace._is_ready_deployment_returnvalues['test-minio-https'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-logger'] = True
+    namespace._is_ready_deployment_returnvalues['test-nginx'] = True
     assert deployment.is_ready('test', 'minio', namespace_lib=namespace)
     namespace = MockNamespace()
-    namespace._is_ready_deployment_returnvalues['test-minio-http'] = False
+    namespace._is_ready_deployment_returnvalues['test-minio'] = False
     assert not deployment.is_ready('test', 'minio', namespace_lib=namespace)
 
 
@@ -196,9 +198,11 @@ def test_details():
         'metrics': EXPECTED_NAMESPACE_METRICS
     }
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
-    namespace._is_ready_deployment_returnvalues['test-minio-http'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-logger'] = False
+    namespace._is_ready_deployment_returnvalues['test-nginx'] = True
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
-    namespace._is_ready_deployment_returnvalues['test-minio-https'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-logger'] = True
     expected_deployment_details['ready'] = True
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
 
@@ -210,8 +214,8 @@ def test_history():
 
 
 def test_get_hostname():
-    assert deployment.get_hostname('test', 'minio', 'http') == 'minio-http.test.svc.cluster.local'
-    assert deployment.get_hostname('test', 'minio', 'https') == 'minio-https.test.svc.cluster.local'
+    assert deployment.get_hostname('test', 'minio', 'http') == 'nginx.test.svc.cluster.local'
+    assert deployment.get_hostname('test', 'minio', 'https') == 'nginx.test.svc.cluster.local'
 
 
 def test_get_metrics():
