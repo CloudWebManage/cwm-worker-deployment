@@ -7,8 +7,8 @@ PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL") or "http://localhost:9090"
 DEPLOYMENT_TYPES = {
     "minio": {
         "hostname": {
-            'http': "nginx.{namespace_name}.svc.cluster.local",
-            'https': "nginx.{namespace_name}.svc.cluster.local",
+            'http': "minio-nginx.{namespace_name}.svc.cluster.local",
+            'https': "minio-nginx.{namespace_name}.svc.cluster.local",
         },
         "readiness_checks": [
             {
@@ -17,11 +17,15 @@ DEPLOYMENT_TYPES = {
             },
             {
                 "type": "deployment",
-                "deployment_name": "minio"
+                "deployment_name": "minio-server"
             },
             {
                 "type": "deployment",
-                "deployment_name": "nginx"
+                "deployment_name": "minio-nginx"
+            },
+            {
+                "type": "deployment",
+                "deployment_name": "minio-external-scaler"
             },
         ],
         "metrics_checks": [
@@ -30,45 +34,49 @@ DEPLOYMENT_TYPES = {
                 {
                     "name": "network_receive_bytes_total_last_{}".format(d),
                     "type": "namespace_prometheus_rate_query",
-                    "query": 'rate(container_network_receive_bytes_total{namespace="__NAMESPACE_NAME__",pod=~"minio-(http|https)-.*"}['+d+'])'
+                    "query": 'rate(container_network_receive_bytes_total{namespace="__NAMESPACE_NAME__",pod=~"minio-server-.*"}['+d+'])'
                 } for d in ['5m', '10m', '30m', '1h', '3h', '6h', '12h', '24h', '48h', '72h', '96h']
             ],
         ],
         "deletions": [
             {
                 "type": "deployment",
-                "deployment_name": "minio"
+                "deployment_name": "minio-server"
             },
             {
                 "type": "deployment",
-                "deployment_name": "nginx"
+                "deployment_name": "minio-nginx"
             },
             {
                 "type": "deployment",
                 "deployment_name": "minio-logger"
-            }
+            },
+            {
+                "type": "deployment",
+                "deployment_name": "minio-external-scaler"
+            },
         ],
         "external_services": [
             {
-                "name": "minio",
+                "name": "minio-server",
                 "spec": {
                     "ports": [
                         {"name": "8080", "port": 8080}
                     ],
                     "selector": {
-                        "app": "minio"
+                        "app": "minio-server"
                     }
                 }
             },
             {
-                "name": "nginx",
+                "name": "minio-nginx",
                 "spec": {
                     "ports": [
                         {"name": "80", "port": 80},
                         {"name": "443", "port": 443}
                     ],
                     "selector": {
-                        "app": "nginx"
+                        "app": "minio-nginx"
                     }
                 }
             }

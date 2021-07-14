@@ -101,25 +101,25 @@ def test_deploy_external_service():
         {
             'namespace_name': 'test',
             'service': {
-                'name': 'minio',
+                'name': 'minio-server',
                 'spec': {
                     'ports': [
                         {'name': '8080', 'port': 8080}
                     ],
-                    'selector': {'app': 'minio'}
+                    'selector': {'app': 'minio-server'}
                 }
             }
         },
         {
             'namespace_name': 'test',
             'service': {
-                'name': 'nginx',
+                'name': 'minio-nginx',
                 'spec': {
                     'ports': [
                         {'name': '80', 'port': 80},
                         {'name': '443', 'port': 443},
                     ],
-                    'selector': {'app': 'nginx'}
+                    'selector': {'app': 'minio-nginx'}
                 }
             }
         }
@@ -214,8 +214,8 @@ def test_history():
 
 
 def test_get_hostname():
-    assert deployment.get_hostname('test', 'minio', 'http') == 'nginx.test.svc.cluster.local'
-    assert deployment.get_hostname('test', 'minio', 'https') == 'nginx.test.svc.cluster.local'
+    assert deployment.get_hostname('test', 'minio', 'http') == 'minio-nginx.test.svc.cluster.local'
+    assert deployment.get_hostname('test', 'minio', 'https') == 'minio-nginx.test.svc.cluster.local'
 
 
 def test_get_metrics():
