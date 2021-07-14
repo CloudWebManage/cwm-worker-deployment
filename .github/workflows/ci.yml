@@ -31,4 +31,4 @@ jobs:
         echo "-e \"git+https://github.com/CloudWebManage/cwm-worker-deployment.git@${GITHUB_SHA}#egg=cwm-worker-deployment\"" >> requirements-cwm-worker-deployment.txt &&\
         git add requirements-cwm-worker-deployment.txt &&\
         git commit -m "automatic update of cwm-worker-deployment" &&\
-        git push origin master
+        git push origin main
