@@ -23,10 +23,10 @@ DEPLOYMENT_TYPES = {
                 "type": "deployment",
                 "deployment_name": "minio-nginx"
             },
-            {
-                "type": "deployment",
-                "deployment_name": "minio-external-scaler"
-            },
+            # {
+            #     "type": "deployment",
+            #     "deployment_name": "minio-external-scaler"
+            # },
         ],
         "metrics_checks": [
             # the first query must be 5m network receive, otherwise test_namespace.test_metrics_check_prometheus_rate_query will break
@@ -51,10 +51,10 @@ DEPLOYMENT_TYPES = {
                 "type": "deployment",
                 "deployment_name": "minio-logger"
             },
-            {
-                "type": "deployment",
-                "deployment_name": "minio-external-scaler"
-            },
+            # {
+            #     "type": "deployment",
+            #     "deployment_name": "minio-external-scaler"
+            # },
         ],
         "external_services": [
             {

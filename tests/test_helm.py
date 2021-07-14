@@ -38,7 +38,7 @@ def test_chart_cache_init():
         )
         assert chart_path == expected_chart_path
         assert set([os.path.basename(p) for p in glob(os.path.join(chart_path, "*"))]) == {
-            'values.yaml', 'templates', 'Chart.yaml', 'cwm-worker-logger.image'}
+            'values.yaml', 'templates', 'Chart.yaml', 'cwm-worker-logger.image', 'cwm-keda-external-scaler.image'}
 
 
 def test_release():

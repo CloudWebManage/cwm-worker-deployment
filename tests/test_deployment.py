@@ -46,7 +46,7 @@ def test_chart_cache_init():
         chart_path = deployment.chart_cache_init('cwm-worker-deployment-minio', latest_version, 'minio')
         assert chart_path == expected_chart_path
         assert set([os.path.basename(p) for p in glob(os.path.join(chart_path, "*"))]) == {
-            'values.yaml', 'templates', 'Chart.yaml', 'cwm-worker-logger.image'}
+            'values.yaml', 'templates', 'Chart.yaml', 'cwm-worker-logger.image', 'cwm-keda-external-scaler.image'}
 
 
 def test_init():
@@ -162,20 +162,20 @@ def test_delete():
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == []
-    assert namespace._deleted_deployments == ['test-minio', 'test-nginx', 'test-minio-logger']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
     namespace = MockNamespace()
     helm = MockHelm()
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False, delete_namespace=True)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == ['test']
-    assert namespace._deleted_deployments == ['test-minio', 'test-nginx', 'test-minio-logger']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
 
 
 def test_is_ready():
     namespace = MockNamespace()
-    namespace._is_ready_deployment_returnvalues['test-minio'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-server'] = True
     namespace._is_ready_deployment_returnvalues['test-minio-logger'] = True
-    namespace._is_ready_deployment_returnvalues['test-nginx'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-nginx'] = True
     assert deployment.is_ready('test', 'minio', namespace_lib=namespace)
     namespace = MockNamespace()
     namespace._is_ready_deployment_returnvalues['test-minio'] = False
@@ -198,9 +198,9 @@ def test_details():
         'metrics': EXPECTED_NAMESPACE_METRICS
     }
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
-    namespace._is_ready_deployment_returnvalues['test-minio'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-server'] = True
     namespace._is_ready_deployment_returnvalues['test-minio-logger'] = False
-    namespace._is_ready_deployment_returnvalues['test-nginx'] = True
+    namespace._is_ready_deployment_returnvalues['test-minio-nginx'] = True
     assert deployment.details('test', 'minio', helm_lib=helm, namespace_lib=namespace) == expected_deployment_details
     namespace._is_ready_deployment_returnvalues['test-minio-logger'] = True
     expected_deployment_details['ready'] = True
