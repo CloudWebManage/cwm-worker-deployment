@@ -28,7 +28,8 @@ def init(namespace_name, dry_run=False):
         "metadata": {
             "name": namespace_name,
             "labels": {
-                "cwmc-prom-servicemonitors": "allow"
+                "cwmc-prom-servicemonitors": "allow",
+                "cwmc-minio": "yes"
             }
         }
     }
