@@ -21,7 +21,8 @@ DEPLOYMENT_TYPES = {
             },
             {
                 "type": "deployment",
-                "deployment_name": "minio-nginx"
+                "deployment_name": "minio-nginx",
+                "minimal_check": True
             },
             # {
             #     "type": "deployment",
