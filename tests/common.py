@@ -84,8 +84,8 @@ def init_wait_deploy_helm(namespace_name):
         returncode, stdout, stderr = helm.upgrade(*args, dry_run=True, dry_run_debug=False, **kwargs)
         assert returncode == 0
         assert stderr.strip() == ""
-        assert "NAME: minio" in stdout
-        assert "image: docker.pkg.github.com/cloudwebmanage/cwm-worker-deployment-minio/minio" in stdout
+        assert "NAME: minio" in stdout, stdout
+        assert "image: ghcr.io/cloudwebmanage/cwm-worker-deployment-minio/minio" in stdout
         returncode, stdout, stderr = helm.upgrade(*args, **kwargs)
         assert returncode == 0
         assert stderr.strip() == ""
