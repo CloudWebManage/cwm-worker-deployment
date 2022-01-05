@@ -14,6 +14,10 @@ class MockHelm:
     def get_latest_version(self, *args, **kwargs):
         return helm.get_latest_version(*args, **kwargs)
 
+    # this method is easy to run with minimal external dependencies, not worth the effort to mock
+    def chart_cache_init(self, *args, **kwargs):
+        return helm.chart_cache_init(*args, **kwargs)
+
     def upgrade(self, *args, **kwargs):
         self._upgrade_calls.append((args, kwargs))
         return self._upgrade_call_returnvalue

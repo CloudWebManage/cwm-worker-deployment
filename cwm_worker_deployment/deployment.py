@@ -65,8 +65,7 @@ def deploy_preprocess_specs(specs, helm_lib=None):
                         "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-{}".format(deployment_type),
                         'cwm-worker-deployment-{}'.format(deployment_type)
                     )
-            else:
-                chart_path = helm_lib.chart_cache_init(chart_name, version, chart_repo)
+            chart_path = helm_lib.chart_cache_init(chart_name, version, chart_repo)
         preprocess_results[key] = namespace_name, release_name, repo_name, chart_name, version, spec, chart_path, chart_repo
     return preprocess_results
 
