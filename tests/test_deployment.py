@@ -157,18 +157,21 @@ def test_delete():
     assert helm._delete_calls == [{'kwargs': {'dry_run': False, 'timeout_string': None}, 'namespace_name': 'test', 'release_name': 'minio-test'}]
     assert namespace._deleted_namespace_names == []
     assert namespace._deleted_deployments == []
+    assert namespace._deleted_data == []
     namespace = MockNamespace()
     helm = MockHelm()
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == []
     assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_data == []
     namespace = MockNamespace()
     helm = MockHelm()
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False, delete_namespace=True)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == ['test']
     assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_data == []
 
 
 def test_is_ready():
@@ -222,3 +225,30 @@ def test_get_metrics():
     namespace = MockNamespace()
     _set_namespace_metrics(namespace)
     assert deployment.get_metrics('test', 'minio', namespace_lib=namespace) == EXPECTED_NAMESPACE_METRICS
+
+
+def test_delete_data():
+    namespace = MockNamespace()
+    helm = MockHelm()
+    deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm,
+                      delete_data=True, delete_data_config={'foo': 'bar'})
+    assert helm._delete_calls == [{'kwargs': {'dry_run': False, 'timeout_string': None}, 'namespace_name': 'test', 'release_name': 'minio-test'}]
+    assert namespace._deleted_namespace_names == []
+    assert namespace._deleted_deployments == []
+    assert namespace._deleted_data == [('test', {'foo': 'bar'})]
+    namespace = MockNamespace()
+    helm = MockHelm()
+    deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False,
+                      delete_data=True, delete_data_config={'foo': 'bar'})
+    assert helm._delete_calls == []
+    assert namespace._deleted_namespace_names == []
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_data == [('test', {'foo': 'bar'})]
+    namespace = MockNamespace()
+    helm = MockHelm()
+    deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False, delete_namespace=True,
+                      delete_data=True, delete_data_config={'foo': 'bar'})
+    assert helm._delete_calls == []
+    assert namespace._deleted_namespace_names == ['test']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_data == [('test', {'foo': 'bar'})]

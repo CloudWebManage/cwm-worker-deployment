@@ -1,9 +1,19 @@
+import time
 import urllib3
+import datetime
+import traceback
+from textwrap import dedent
+
 import requests
+
 from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
 
 import cwm_worker_deployment.config
+
+
+# This should match the image in cwm_worker_operator deployments_manager
+ALPINE_IMAGE = "alpine:3.15.0@sha256:21a3deaa0d32a8057914f36584b5288d2e5ecc984380bc0118285c70fa8c9300"
 
 
 urllib3.disable_warnings()
@@ -19,6 +29,7 @@ except config.ConfigException:
 coreV1Api = client.CoreV1Api()
 appsV1Api = client.AppsV1Api()
 apiClient = client.ApiClient()
+batchV1Api = client.BatchV1Api()
 
 
 def init(namespace_name, dry_run=False):
@@ -67,6 +78,71 @@ def delete_deployment(namespace_name, deployment_name):
     except ApiException as e:
         if e.reason != "Not Found":
             raise
+
+
+def delete_data(namespace_name, delete_data_config):
+    sub_path, volume = delete_data_config['subPath'], delete_data_config['volume']
+    job_name = 'delete-data'
+    create_objects(namespace_name, [{
+        'apiVersion': 'batch/v1',
+        'kind': 'Job',
+        'metadata': {
+            'name': job_name
+        },
+        'spec': {
+            'parallelism': 1,
+            'completions': 1,
+            'template': {
+                'spec': {
+                    'restartPolicy': 'Never',
+                    'terminationGracePeriodSeconds': 0,
+                    'containers': [{
+                        'name': job_name,
+                        'image': ALPINE_IMAGE,
+                        'command': [
+                            'sh', '-c', dedent("""
+                                RET=0
+                                cd /data
+                                for P in `ls -A`; do
+                                  if ! rm -rf "$P"; then
+                                    RET=1
+                                  fi
+                                done
+                                exit $RET
+                            """)
+                        ],
+                        'volumeMounts': [{
+                            'name': 'data',
+                            'subPath': sub_path,
+                            'mountPath': '/data'
+                        }]
+                    }],
+                    'volumes': [{
+                        'name': 'data',
+                        **volume
+                    }]
+                }
+            },
+        }
+    }])
+    try:
+        success = False
+        start_time = datetime.datetime.now()
+        while (datetime.datetime.now() - start_time).total_seconds() < 1800:
+            time.sleep(1)
+            try:
+                job: client.V1Job = batchV1Api.read_namespaced_job_status(job_name, namespace_name)
+                status: client.V1JobStatus = job.status
+                if status.succeeded and status.succeeded >= 1:
+                    success = True
+                    break
+                elif status.failed and status.failed >= 1:
+                    break
+            except:
+                traceback.print_exc()
+        assert success, 'failed to delete data'
+    finally:
+        batchV1Api.delete_namespaced_job(job_name, namespace_name, propagation_policy='Foreground')
 
 
 def create_service(namespace_name, service):

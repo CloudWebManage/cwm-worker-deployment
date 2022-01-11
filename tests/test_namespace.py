@@ -1,7 +1,5 @@
-import os
-import time
-import requests
 import subprocess
+from textwrap import dedent
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -169,3 +167,57 @@ def test_create_objects():
 #                 assert namespace.metrics_check_prometheus_rate_query(namespace_name, query, debug=True) == 0.0
 #     finally:
 #         prompf.terminate()
+
+
+def test_delete_data():
+    namespace_name = 'default'
+    volume_config = {
+        'hostPath': {
+            'type': 'DirectoryOrCreate',
+            'path': '/opt/cwm-worker-deployment/test_delete_data'
+        }
+    }
+    pod_name = 'cwd-test-namespace-delete-data'
+    namespace.create_objects(namespace_name, [{
+        'apiVersion': 'v1',
+        'kind': 'Pod',
+        'metadata': {
+            'name': pod_name
+        },
+        'spec': {
+            'restartPolicy': 'Never',
+            'terminationGracePeriodSeconds': 0,
+            'containers': [{
+                'name': pod_name,
+                'image': namespace.ALPINE_IMAGE,
+                'command': ['sleep', '86400'],
+                'volumeMounts': [{
+                    'name': 'data',
+                    'mountPath': '/data'
+                }]
+            }],
+            'volumes': [{
+                'name': 'data',
+                **volume_config
+            }]
+        }
+    }])
+    try:
+        subprocess.check_call(['kubectl', '-n', namespace_name, 'wait', 'pod', pod_name, '--for', 'condition=Ready'])
+        subpath = 'data'
+        subprocess.check_call(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'sh', '-c', dedent("""
+            mkdir -p /data/{subpath} &&\
+            touch /data/{subpath}/test1 &&\
+            touch /data/{subpath}/test2.foo &&\
+            touch /data/{subpath}/.test3
+        """.format(subpath=subpath))])
+        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/data']).decode().split()) == {
+            '.', '..', '.test3', 'test1', 'test2.foo'}
+        namespace.delete_data(namespace_name, {
+            'subPath': subpath,
+            'volume': volume_config
+        })
+        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/data']).decode().split()) == {
+                   '.', '..'}
+    finally:
+        namespace.coreV1Api.delete_namespaced_pod(pod_name, namespace_name)
