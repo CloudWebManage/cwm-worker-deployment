@@ -21,6 +21,10 @@ def _delete_deployment(namespace_name, deployment_type, deletion, namespace_lib)
     return namespace_lib.delete_deployment(namespace_name, deletion['deployment_name'])
 
 
+def _delete_data(namespace_name, deployment_type, delete_data_config, namespace_lib):
+    return namespace_lib.delete_data(namespace_name, delete_data_config)
+
+
 def chart_cache_init(chart_name, version, deployment_type):
     chart_repo = "https://raw.githubusercontent.com/CloudWebManage/cwm-worker-helm/master/cwm-worker-deployment-{}".format(deployment_type)
     return helm.chart_cache_init(chart_name, version, chart_repo)
@@ -122,7 +126,9 @@ def deploy_extra_objects(spec, extra_objects, namespace_lib=None):
 
 
 # example timeout string: "5m0s"
-def delete(namespace_name, deployment_type, timeout_string=None, dry_run=False, delete_namespace=False, delete_helm=True, namespace_lib=None, helm_lib=None):
+def delete(namespace_name, deployment_type, timeout_string=None, dry_run=False, delete_namespace=False,
+           delete_helm=True, namespace_lib=None, helm_lib=None,
+           delete_data=False, delete_data_config=None):
     if not namespace_lib:
         namespace_lib = namespace
     if not helm_lib:
@@ -135,8 +141,12 @@ def delete(namespace_name, deployment_type, timeout_string=None, dry_run=False, 
             {
                 "deployment": _delete_deployment
             }[deletion["type"]](namespace_name, deployment_type, deletion, namespace_lib)
-    if delete_namespace:
-        namespace_lib.delete(namespace_name, dry_run=dry_run)
+    try:
+        if delete_data:
+            _delete_data(namespace_name, deployment_type, delete_data_config, namespace_lib)
+    finally:
+        if delete_namespace:
+            namespace_lib.delete(namespace_name, dry_run=dry_run)
 
 
 def is_ready(namespace_name, deployment_type, namespace_lib=None, enabledProtocols=None, minimal_check=False):

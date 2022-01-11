@@ -8,6 +8,7 @@ class MockNamespace:
         self._deleted_deployments = []
         self._is_ready_deployment_returnvalues = {}
         self._metrics_check_prometheus_rate_query_returnvalues = {}
+        self._deleted_data = []
 
     def init(self, namespace_name, dry_run=False):
         if not dry_run:
@@ -31,3 +32,6 @@ class MockNamespace:
 
     def metrics_check_prometheus_rate_query(self, namespace_name, query):
         return self._metrics_check_prometheus_rate_query_returnvalues['{}-{}'.format(namespace_name, query)]
+
+    def delete_data(self, namespace_name, delete_data_config):
+        self._deleted_data.append((namespace_name, delete_data_config))
