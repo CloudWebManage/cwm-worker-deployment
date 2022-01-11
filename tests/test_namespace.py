@@ -211,13 +211,13 @@ def test_delete_data():
             touch /data/{subpath}/test2.foo &&\
             touch /data/{subpath}/.test3
         """.format(subpath=subpath))])
-        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/data']).decode().split()) == {
+        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/{}'.format(subpath)]).decode().split()) == {
             '.', '..', '.test3', 'test1', 'test2.foo'}
         namespace.delete_data(namespace_name, {
             'subPath': subpath,
             'volume': volume_config
         })
-        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/data']).decode().split()) == {
+        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/{}'.format(subpath)]).decode().split()) == {
                    '.', '..'}
     finally:
         namespace.coreV1Api.delete_namespaced_pod(pod_name, namespace_name)
