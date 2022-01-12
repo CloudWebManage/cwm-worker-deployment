@@ -96,6 +96,9 @@ def delete_data(namespace_name, delete_data_config):
                 'spec': {
                     'restartPolicy': 'Never',
                     'terminationGracePeriodSeconds': 0,
+                    'tolerations': [
+                        {"key": "cwmc-role", "operator": "Exists", "effect": "NoSchedule"}
+                    ],
                     'containers': [{
                         'name': job_name,
                         'image': ALPINE_IMAGE,
