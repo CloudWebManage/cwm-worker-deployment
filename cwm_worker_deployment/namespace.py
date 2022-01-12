@@ -82,6 +82,8 @@ def delete_deployment(namespace_name, deployment_name):
 
 def delete_data(namespace_name, delete_data_config):
     sub_path, volume = delete_data_config['subPath'], delete_data_config['volume']
+    sub_path = sub_path.strip()
+    assert len(sub_path) > 3
     job_name = 'delete-data'
     create_objects(namespace_name, [{
         'apiVersion': 'batch/v1',
@@ -102,21 +104,9 @@ def delete_data(namespace_name, delete_data_config):
                     'containers': [{
                         'name': job_name,
                         'image': ALPINE_IMAGE,
-                        'command': [
-                            'sh', '-c', dedent("""
-                                RET=0
-                                cd /data
-                                for P in `ls -A`; do
-                                  if ! rm -rf "$P"; then
-                                    RET=1
-                                  fi
-                                done
-                                exit $RET
-                            """)
-                        ],
+                        'command': ['rm', '-rf', '/data/{}'.format(sub_path)],
                         'volumeMounts': [{
                             'name': 'data',
-                            'subPath': sub_path,
                             'mountPath': '/data'
                         }]
                     }],

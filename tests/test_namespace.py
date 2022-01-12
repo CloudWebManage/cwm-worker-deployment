@@ -217,7 +217,6 @@ def test_delete_data():
             'subPath': subpath,
             'volume': volume_config
         })
-        assert set(subprocess.check_output(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '-a', '/data/{}'.format(subpath)]).decode().split()) == {
-                   '.', '..'}
+        assert subprocess.call(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '/data/{}'.format(subpath)]) == 1
     finally:
         namespace.coreV1Api.delete_namespaced_pod(pod_name, namespace_name)
