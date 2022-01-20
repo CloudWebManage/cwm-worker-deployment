@@ -5,11 +5,11 @@ from cwm_worker_deployment import deployment
 
 
 def main():
-    if sys.argv[1] == "init":
+    if len(sys.argv) > 1 and sys.argv[1] == "init":
         args = sys.argv[2:]
         dry_run = "--dry-run" in args
         deployment.init(dry_run=dry_run)
-    elif sys.argv[1] == "deploy":
+    elif len(sys.argv) > 1 and sys.argv[1] == "deploy":
         spec = yaml.safe_load(sys.stdin)
         args = sys.argv[2:]
         dry_run = "--dry-run" in args
@@ -20,7 +20,7 @@ def main():
                 atomic_timeout_string = arg
             last_arg = arg
         deployment.deploy(spec, dry_run=dry_run, atomic_timeout_string=atomic_timeout_string)
-    elif sys.argv[1] == "delete":
+    elif len(sys.argv) > 1 and sys.argv[1] == "delete":
         args = sys.argv[2:]
         namespace_name = args[0]
         deployment_type = args[1]
@@ -33,7 +33,7 @@ def main():
                 timeout_string = arg
             last_arg = arg
         deployment.delete(namespace_name, deployment_type, dry_run=dry_run, timeout_string=timeout_string, delete_namespace=delete_namespace)
-    elif sys.argv[1] == "is_ready":
+    elif len(sys.argv) > 1 and sys.argv[1] == "is_ready":
         args = sys.argv[2:]
         namespace_name = args[0]
         deployment_type = args[1]
@@ -42,23 +42,25 @@ def main():
         else:
             print("Not Ready")
             exit(10)
-    elif sys.argv[1] == "details":
+    elif len(sys.argv) > 1 and sys.argv[1] == "details":
         args = sys.argv[2:]
         namespace_name = args[0]
         deployment_type = args[1]
         yaml.safe_dump(deployment.details(namespace_name, deployment_type), sys.stdout, default_flow_style=False)
-    elif sys.argv[1] == "history":
+    elif len(sys.argv) > 1 and sys.argv[1] == "history":
         args = sys.argv[2:]
         namespace_name = args[0]
         deployment_type = args[1]
         yaml.safe_dump(deployment.history(namespace_name, deployment_type), sys.stdout, default_flow_style=False)
-    elif sys.argv[1] == "get_hostname":
+    elif len(sys.argv) > 1 and sys.argv[1] == "get_hostname":
         args = sys.argv[2:]
         namespace_name = args[0]
         deployment_type = args[1]
         protocol = args[2]
         print(deployment.get_hostname(namespace_name, deployment_type, protocol))
-    elif sys.argv[1] == "chart_cache_init":
+    elif len(sys.argv) > 1 and sys.argv[1] == "chart_cache_init":
         print(deployment.chart_cache_init(*sys.argv[2:]))
     else:
-        raise Exception()
+        from . import click_cli
+        click_cli.main()
+

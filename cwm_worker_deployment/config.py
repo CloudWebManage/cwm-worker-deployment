@@ -81,6 +81,22 @@ DEPLOYMENT_TYPES = {
                     }
                 }
             }
-        ]
+        ],
+        'health': {
+            'deployments': {
+                'external-scaler': {
+                    'matchLabelsApp': 'minio-external-scaler'
+                },
+                'logger': {
+                    'matchLabelsApp': 'minio-logger'
+                },
+                'nginx': {
+                    'matchLabelsApp': 'minio-nginx'
+                },
+                'server': {
+                    'matchLabelsApp': 'minio-server'
+                },
+            }
+        }
     }
 }

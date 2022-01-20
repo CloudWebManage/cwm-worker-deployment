@@ -220,3 +220,58 @@ def test_delete_data():
         assert subprocess.call(['kubectl', '-n', namespace_name, 'exec', pod_name, '--', 'ls', '/data/{}'.format(subpath)]) == 1
     finally:
         namespace.coreV1Api.delete_namespaced_pod(pod_name, namespace_name)
+
+
+def test_get_namespace():
+    ns = namespace.get_namespace('default')
+    assert ns['metadata']['name'] == 'default'
+    assert ns['status']['phase'] == 'Active'
+
+
+def test_get_deployments_pods():
+    base_name = 'test-namespace-test-get-deployment'
+    deployment_names = ['{}{}'.format(base_name, i) for i in range(2)]
+    for deployment_name in deployment_names:
+        subprocess.call(['kubectl', '-n', 'default', 'delete', 'deployment', deployment_name, '--wait'])
+        namespace.appsV1Api.create_namespaced_deployment('default', {
+            'metadata': {
+                'name': deployment_name
+            },
+            'spec': {
+                'selector': {
+                    'matchLabels': {
+                        'app': deployment_name
+                    }
+                },
+                'template': {
+                    'metadata': {
+                        'labels': {
+                            'app': deployment_name
+                        }
+                    },
+                    'spec': {
+                        'containers': [
+                            {
+                                'name': 'test',
+                                'image': 'alpine',
+                                'command': ['sleep', '86400']
+                            }
+                        ]
+                    }
+                }
+            }
+        })
+    deployments = namespace.get_deployments('default')
+    pods = namespace.get_pods('default')
+    assert len(deployments) == 2
+    assert len(pods) == 2
+    pod_names = [pod['metadata']['name'] for pod in pods]
+    for i, deployment_name in enumerate(deployment_names):
+        assert deployments[i]['metadata']['name'] == deployment_name
+        ok = False
+        for pod_name in pod_names:
+            if pod_name.startswith(deployment_name):
+                ok = True
+        assert ok
+    for deployment_name in deployment_names:
+        subprocess.check_call(['kubectl', '-n', 'default', 'delete', 'deployment', deployment_name, '--wait'])

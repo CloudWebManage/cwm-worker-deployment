@@ -252,3 +252,119 @@ def test_delete_data():
     assert namespace._deleted_namespace_names == ['test']
     assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
     assert namespace._deleted_data == [('test', {'foo': 'bar'})]
+
+
+def test_get_health():
+    namespace = MockNamespace()
+    namespace_name = 'cwm-worker-123456'
+    namespace._get_namespaces[namespace_name] = {
+        'metadata': {
+            'name': namespace_name
+        },
+        'status': {
+            'phase': 'Active'
+        }
+    }
+    namespace._get_pods[namespace_name] = []
+    namespace._get_deployments[namespace_name] = []
+    res = deployment.get_health('cwm-worker-123456', 'minio', namespace_lib=namespace)
+    assert res == {
+        'is_ready': False,
+        'namespace': {'name': namespace_name, 'phase': 'Active'},
+        'deployments': {
+            'external-scaler': {'deployments': [], 'pods': []},
+            'logger': {'deployments': [], 'pods': []},
+            'nginx': {'deployments': [], 'pods': []},
+            'server': {'deployments': [], 'pods': []},
+        }
+    }
+    namespace._get_deployments[namespace_name].append({
+        'metadata': {
+            'name': 'minio-logger'
+        },
+        'spec': {
+            'selector': {
+                'matchLabels': {
+                    'app': 'minio-logger'
+                }
+            }
+        },
+        'status': {
+            'replicas': 1,
+            'updatedReplicas': 2,
+            'readyReplicas': 3,
+            'availableReplicas': 4,
+            'conditions': [
+                {
+                    'type': 'red',
+                    'status': 'true',
+                    'reason': 'error is active'
+                },
+                {
+                    'type': 'green',
+                    'status': 'false'
+                }
+            ]
+        }
+    })
+    namespace._get_pods[namespace_name].append({
+        'metadata': {
+            'name': 'virus'
+        },
+        'status': {
+            'phase': 'Hacker',
+            'conditions': [],
+            'containerStatuses': [
+                {'name': 'debug', 'ready': True, 'restartCount': 4, 'started': False}
+            ]
+        },
+        'spec': {
+            'nodeName': 'control'
+        }
+    })
+    res = deployment.get_health('cwm-worker-123456', 'minio', namespace_lib=namespace)
+    assert res == {
+        'is_ready': False,
+        'namespace': {'name': namespace_name, 'phase': 'Active'},
+        'deployments': {
+            'external-scaler': {'deployments': [], 'pods': []},
+            'logger': {
+                'deployments': [
+                    {
+                        'name': 'minio-logger',
+                        'replicas': {
+                            'replicas': 1,
+                            'updated': 2,
+                            'ready': 3,
+                            'available': 4,
+                        },
+                        'conditions': {
+                            'green': 'false',
+                            'red': 'true:error is active'
+                        }
+                    }
+                ],
+                'pods': []
+            },
+            'nginx': {'deployments': [], 'pods': []},
+            'server': {'deployments': [], 'pods': []},
+            'unknown': {
+                'deployments': [],
+                'pods': [
+                    {
+                        'name': 'virus',
+                        'phase': 'Hacker',
+                        'nodeName': 'control',
+                        'conditions': {},
+                        'containerStatuses': {
+                            'debug': {
+                                'ready': True,
+                                'restartCount': 4,
+                                'started': False
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
