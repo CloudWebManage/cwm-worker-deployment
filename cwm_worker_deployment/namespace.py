@@ -1,8 +1,8 @@
 import time
+
 import urllib3
 import datetime
 import traceback
-from textwrap import dedent
 
 import requests
 
@@ -193,3 +193,23 @@ def get_kube_metrics(namespace_name):
                     if container.resources.requests and container.resources.requests.get('memory'):
                         metrics['ram_requests_bytes'] += (available_replicas * int(utils.quantity.parse_quantity(container.resources.requests['memory'])))
     return metrics
+
+
+def get_deployments(namespace_name):
+    return [
+        deployment.to_dict()
+        for deployment
+        in appsV1Api.list_namespaced_deployment(namespace_name).items
+    ]
+
+
+def get_pods(namespace_name):
+    return [
+        pod.to_dict()
+        for pod
+        in coreV1Api.list_namespaced_pod(namespace_name).items
+    ]
+
+
+def get_namespace(namespace_name):
+    return coreV1Api.read_namespace(namespace_name).to_dict()

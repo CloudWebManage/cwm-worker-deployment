@@ -208,6 +208,75 @@ def get_hostname(namespace_name, deployment_type, protocol):
     return config.DEPLOYMENT_TYPES[deployment_type]["hostname"][protocol].format(namespace_name=namespace_name)
 
 
+def get_health(namespace_name, deployment_type, namespace_lib=None):
+    if not namespace_lib:
+        namespace_lib = namespace
+    namespace_obj = namespace_lib.get_namespace(namespace_name)
+    deployments_output = {
+        deployment_name: {
+            'deployments': [],
+            'pods': []
+        }
+        for deployment_name in config.DEPLOYMENT_TYPES[deployment_type]['health']['deployments'].keys()
+    }
+    deployments_output['unknown'] = {
+        'deployments': [],
+        'pods': []
+    }
+    for pod in namespace_lib.get_pods(namespace_name):
+        pod_deployment_name = 'unknown'
+        for deployment_name, deployment_config in config.DEPLOYMENT_TYPES[deployment_type]['health']['deployments'].items():
+            if deployment_config['matchLabelsApp'] == pod['metadata'].get('labels', {}).get('app'):
+                pod_deployment_name = deployment_name
+                break
+        deployments_output[pod_deployment_name]['pods'].append({
+            'name': pod['metadata']['name'],
+            'phase': pod['status'].get('phase'),
+            'conditions': {
+                c['type']: '{}{}'.format(c['status'], ':{}'.format(c['reason']) if c.get('reason') else '')
+                for c in pod['status'].get('conditions', [])
+            },
+            'containerStatuses': {
+                cs['name']: {
+                    'ready': cs.get('ready'),
+                    'restartCount': cs.get('restartCount'),
+                    'started': cs.get('started')
+                }
+                for cs in pod['status'].get('containerStatuses', [])
+            },
+            'nodeName': pod['spec'].get('nodeName')
+        })
+    for deployment in namespace_lib.get_deployments(namespace_name):
+        dn = 'unknown'
+        for deployment_name, deployment_config in config.DEPLOYMENT_TYPES[deployment_type]['health']['deployments'].items():
+            if deployment_config['matchLabelsApp'] == deployment['spec'].get('selector', {}).get('matchLabels', {}).get('app'):
+                dn = deployment_name
+                break
+        deployments_output[dn]['deployments'].append({
+            'name': deployment['metadata']['name'],
+            'replicas': {
+                'replicas': deployment['status'].get('replicas'),
+                'updated': deployment['status'].get('updatedReplicas'),
+                'ready': deployment['status'].get('readyReplicas'),
+                'available': deployment['status'].get('availableReplicas'),
+            },
+            'conditions': {
+                c['type']: '{}{}'.format(c['status'], ':{}'.format(c['reason']) if c.get('reason') else '')
+                for c in deployment['status'].get('conditions', [])
+            }
+        })
+    if len(deployments_output['unknown']['pods']) == 0 and len(deployments_output['unknown']['deployments']) == 0:
+        del deployments_output['unknown']
+    return {
+        'is_ready': is_ready(namespace_name, deployment_type, namespace_lib=namespace_lib),
+        'namespace': {
+            'name': namespace_obj['metadata']['name'],
+            'phase': namespace_obj['status']['phase']
+        },
+        'deployments': deployments_output
+    }
+
+
 if __name__ == '__main__':
     import sys
     if sys.argv[1] == 'test_deploy_extra_objects':
