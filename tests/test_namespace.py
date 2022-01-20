@@ -226,6 +226,8 @@ def test_get_namespace():
     ns = namespace.get_namespace('default')
     assert ns['metadata']['name'] == 'default'
     assert ns['status']['phase'] == 'Active'
+    ns = namespace.get_namespace('invalid--does--not--exist')
+    assert ns is None
 
 
 def test_get_deployments_pods():

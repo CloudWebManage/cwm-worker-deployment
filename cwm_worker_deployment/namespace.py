@@ -212,4 +212,10 @@ def get_pods(namespace_name):
 
 
 def get_namespace(namespace_name):
-    return coreV1Api.read_namespace(namespace_name).to_dict()
+    try:
+        return coreV1Api.read_namespace(namespace_name).to_dict()
+    except ApiException as e:
+        if e.reason == 'Not Found':
+            return None
+        else:
+            raise
