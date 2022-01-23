@@ -274,10 +274,6 @@ def test_get_deployments_pods():
     for i, deployment_name in enumerate(deployment_names):
         assert deployments[i]['spec']['selector']['matchLabels']['app'] == deployment_name
         assert deployments[i]['metadata']['name'] == deployment_name
-        assert deployments[i]['status']['replicas'] == 1
-        assert deployments[i]['status']['updatedReplicas'] >= 1
-        for c in deployments[i]['status']['conditions']:
-            assert c['type'] and c['status']
         ok = False
         for pod_name in pod_names:
             if pod_name.startswith(deployment_name):
