@@ -1,3 +1,4 @@
+import time
 import subprocess
 from textwrap import dedent
 
@@ -234,7 +235,8 @@ def test_get_deployments_pods():
     base_name = 'test-namespace-test-get-deployment'
     deployment_names = ['{}{}'.format(base_name, i) for i in range(2)]
     for deployment_name in deployment_names:
-        subprocess.call(['kubectl', '-n', 'default', 'delete', 'deployment', deployment_name, '--wait'])
+        if subprocess.call(['kubectl', '-n', 'default', 'delete', 'deployment', deployment_name, '--wait']) == 0:
+            time.sleep(2)
         namespace.appsV1Api.create_namespaced_deployment('default', {
             'metadata': {
                 'name': deployment_name
@@ -252,6 +254,7 @@ def test_get_deployments_pods():
                         }
                     },
                     'spec': {
+                        'terminationGracePeriodSeconds': 0,
                         'containers': [
                             {
                                 'name': 'test',
@@ -269,7 +272,12 @@ def test_get_deployments_pods():
     assert len(pods) == 2
     pod_names = [pod['metadata']['name'] for pod in pods]
     for i, deployment_name in enumerate(deployment_names):
+        assert deployments[i]['spec']['selector']['matchLabels']['app'] == deployment_name
         assert deployments[i]['metadata']['name'] == deployment_name
+        assert deployments[i]['status']['replicas'] == 1
+        assert deployments[i]['status']['updatedReplicas'] >= 1
+        for c in deployments[i]['status']['conditions']:
+            assert c['type'] and c['status']
         ok = False
         for pod_name in pod_names:
             if pod_name.startswith(deployment_name):

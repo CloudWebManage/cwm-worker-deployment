@@ -1,8 +1,9 @@
+import json
 import time
-
 import urllib3
 import datetime
 import traceback
+import subprocess
 
 import requests
 
@@ -196,19 +197,15 @@ def get_kube_metrics(namespace_name):
 
 
 def get_deployments(namespace_name):
-    return [
-        deployment.to_dict()
-        for deployment
-        in appsV1Api.list_namespaced_deployment(namespace_name).items
-    ]
+    return json.loads(
+        subprocess.check_output(['kubectl', '-n', namespace_name, 'get', 'deployments', '-o', 'json'])
+    ).get('items', [])
 
 
 def get_pods(namespace_name):
-    return [
-        pod.to_dict()
-        for pod
-        in coreV1Api.list_namespaced_pod(namespace_name).items
-    ]
+    return json.loads(
+        subprocess.check_output(['kubectl', '-n', namespace_name, 'get', 'pods', '-o', 'json'])
+    ).get('items', [])
 
 
 def get_namespace(namespace_name):
