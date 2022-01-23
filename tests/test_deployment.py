@@ -163,14 +163,14 @@ def test_delete():
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == []
-    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger', 'test-minio-external-scaler']
     assert namespace._deleted_data == []
     namespace = MockNamespace()
     helm = MockHelm()
     deployment.delete('test', 'minio', namespace_lib=namespace, helm_lib=helm, delete_helm=False, delete_namespace=True)
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == ['test']
-    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger', 'test-minio-external-scaler']
     assert namespace._deleted_data == []
 
 
@@ -242,7 +242,7 @@ def test_delete_data():
                       delete_data=True, delete_data_config={'foo': 'bar'})
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == []
-    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger', 'test-minio-external-scaler']
     assert namespace._deleted_data == [('test', {'foo': 'bar'})]
     namespace = MockNamespace()
     helm = MockHelm()
@@ -250,7 +250,7 @@ def test_delete_data():
                       delete_data=True, delete_data_config={'foo': 'bar'})
     assert helm._delete_calls == []
     assert namespace._deleted_namespace_names == ['test']
-    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger']
+    assert namespace._deleted_deployments == ['test-minio-server', 'test-minio-nginx', 'test-minio-logger', 'test-minio-external-scaler']
     assert namespace._deleted_data == [('test', {'foo': 'bar'})]
 
 
