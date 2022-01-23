@@ -73,9 +73,12 @@ def is_ready_deployment(namespace_name, deployment_name):
         return False
 
 
-def delete_deployment(namespace_name, deployment_name):
+def delete_deployment(namespace_name, deployment_name, force_now=False):
     try:
-        appsV1Api.delete_namespaced_deployment(deployment_name, namespace_name)
+        appsV1Api.delete_namespaced_deployment(
+            deployment_name, namespace_name,
+            **({'grace_period_seconds': 0} if force_now else {})
+        )
     except ApiException as e:
         if e.reason != "Not Found":
             raise

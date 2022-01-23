@@ -52,10 +52,10 @@ DEPLOYMENT_TYPES = {
                 "type": "deployment",
                 "deployment_name": "minio-logger"
             },
-            # {
-            #     "type": "deployment",
-            #     "deployment_name": "minio-external-scaler"
-            # },
+            {
+                "type": "deployment",
+                "deployment_name": "minio-external-scaler"
+            },
         ],
         "external_services": [
             {

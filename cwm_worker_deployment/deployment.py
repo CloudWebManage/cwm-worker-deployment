@@ -17,8 +17,8 @@ def _get_metrics_namespace_prometheus_rate_query(namespace_name, deployment_type
     return namespace_lib.metrics_check_prometheus_rate_query(namespace_name, metrics_check['query'])
 
 
-def _delete_deployment(namespace_name, deployment_type, deletion, namespace_lib):
-    return namespace_lib.delete_deployment(namespace_name, deletion['deployment_name'])
+def _delete_deployment(namespace_name, deployment_type, deletion, namespace_lib, force_now=False):
+    return namespace_lib.delete_deployment(namespace_name, deletion['deployment_name'], force_now=force_now)
 
 
 def _delete_data(namespace_name, deployment_type, delete_data_config, namespace_lib):
@@ -128,19 +128,19 @@ def deploy_extra_objects(spec, extra_objects, namespace_lib=None):
 # example timeout string: "5m0s"
 def delete(namespace_name, deployment_type, timeout_string=None, dry_run=False, delete_namespace=False,
            delete_helm=True, namespace_lib=None, helm_lib=None,
-           delete_data=False, delete_data_config=None):
+           delete_data=False, delete_data_config=None, force_now=False):
     if not namespace_lib:
         namespace_lib = namespace
     if not helm_lib:
         helm_lib = helm
     release_name = _get_release_name(namespace_name, deployment_type)
-    if delete_helm:
-        helm_lib.delete(namespace_name, release_name, timeout_string=timeout_string, dry_run=dry_run)
-    else:
+    if force_now or not delete_helm:
         for deletion in config.DEPLOYMENT_TYPES[deployment_type]["deletions"]:
             {
                 "deployment": _delete_deployment
-            }[deletion["type"]](namespace_name, deployment_type, deletion, namespace_lib)
+            }[deletion["type"]](namespace_name, deployment_type, deletion, namespace_lib, force_now=force_now)
+    if delete_helm:
+        helm_lib.delete(namespace_name, release_name, timeout_string=timeout_string, dry_run=dry_run)
     try:
         if delete_data:
             _delete_data(namespace_name, deployment_type, delete_data_config, namespace_lib)

@@ -27,7 +27,7 @@ class MockNamespace:
         if not dry_run:
             self._deleted_namespace_names.append(namespace_name)
 
-    def delete_deployment(self, namespace_name, deployment_name):
+    def delete_deployment(self, namespace_name, deployment_name, force_now=False):
         self._deleted_deployments.append("{}-{}".format(namespace_name, deployment_name))
 
     def is_ready_deployment(self, namespace_name, deployment_name):
