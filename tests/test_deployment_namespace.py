@@ -264,11 +264,11 @@ def test_get_health_pod_restart_loop():
                 }
             elif phase == 'Running':
                 num_running += 1
-                assert container_state == {
-                    'state': 'terminated',
-                    'reason': 'Error',
-                    'exitCode': 1
-                }
+                assert container_state.pop('reason') in ['Error', 'CrashLoopBackOff']
+                assert container_state.pop('state') in ['waiting', 'terminated']
+                assert container_state.pop('exitCode', None) in [None, 1]
+                assert container_state == {}
+            assert pod['containerStatuses']['test'].pop('restartCount') >= 0
             assert pod == {
                 'nodeName': 'minikube',
                 'conditions': {
@@ -280,7 +280,6 @@ def test_get_health_pod_restart_loop():
                 'containerStatuses': {
                     'test': {
                         'ready': False,
-                        'restartCount': 0,
                         'started': False,
                     }
                 }

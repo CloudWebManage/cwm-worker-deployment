@@ -213,7 +213,7 @@ def get_container_status_state(state):
     if state:
         key, state = list(state.items())[0]
         res['state'] = key
-        for k in ['exitCode', 'message', 'reason', 'signal']:
+        for k in ['exitCode', 'reason', 'signal']:
             if state.get(k) is not None:
                 res[k] = state[k]
     return res
