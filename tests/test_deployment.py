@@ -360,7 +360,8 @@ def test_get_health():
                             'debug': {
                                 'ready': True,
                                 'restartCount': 4,
-                                'started': False
+                                'started': False,
+                                'state': {}
                             }
                         }
                     }

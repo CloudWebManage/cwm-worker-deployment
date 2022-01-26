@@ -1,5 +1,6 @@
 ORDERED_TESTS = [
     'tests/test_namespace.py',
+    'tests/test_deployment_namespace.py',
     'tests/test_helm.py',
 ]
 

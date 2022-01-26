@@ -208,6 +208,17 @@ def get_hostname(namespace_name, deployment_type, protocol):
     return config.DEPLOYMENT_TYPES[deployment_type]["hostname"][protocol].format(namespace_name=namespace_name)
 
 
+def get_container_status_state(state):
+    res = {}
+    if state:
+        key, state = list(state.items())[0]
+        res['state'] = key
+        for k in ['exitCode', 'message', 'reason', 'signal']:
+            if state.get(k) is not None:
+                res[k] = state[k]
+    return res
+
+
 def get_health(namespace_name, deployment_type, namespace_lib=None):
     if not namespace_lib:
         namespace_lib = namespace
@@ -241,7 +252,8 @@ def get_health(namespace_name, deployment_type, namespace_lib=None):
                     cs['name']: {
                         'ready': cs.get('ready'),
                         'restartCount': cs.get('restartCount'),
-                        'started': cs.get('started')
+                        'started': cs.get('started'),
+                        'state': get_container_status_state(cs.get('state')),
                     }
                     for cs in pod['status'].get('containerStatuses', [])
                 },
