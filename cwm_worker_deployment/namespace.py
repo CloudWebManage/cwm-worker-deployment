@@ -172,7 +172,7 @@ def metrics_check_prometheus_rate_query(namespace_name, query, debug=False):
     if debug:
         print(url)
         print(params)
-    res = requests.get(url, params=params).json()
+    res = requests.get(url, params=params, timeout=15).json()
     if debug:
         print(res)
     value = 0.0

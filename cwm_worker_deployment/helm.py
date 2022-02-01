@@ -10,7 +10,7 @@ from cwm_worker_deployment import config
 
 
 def get_latest_version(repo_url, chart_name):
-    repo_index = yaml.safe_load(requests.get("{}/index.yaml".format(repo_url)).content)
+    repo_index = yaml.safe_load(requests.get("{}/index.yaml".format(repo_url), timeout=15).content)
     latest_entry_datetime = None
     latest_entry_version = None
     for entry in repo_index['entries'][chart_name]:
