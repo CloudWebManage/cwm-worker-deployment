@@ -208,6 +208,14 @@ def get_hostname(namespace_name, deployment_type, protocol):
     return config.DEPLOYMENT_TYPES[deployment_type]["hostname"][protocol].format(namespace_name=namespace_name)
 
 
+def get_namespace_name_from_hostname(deployment_type, protocol, hostname):
+    hostname_template = config.DEPLOYMENT_TYPES[deployment_type]["hostname"][protocol]
+    pre, post = hostname_template.split('{namespace_name}')
+    assert hostname.startswith(pre)
+    assert hostname.endswith(post)
+    return hostname.replace(pre, '').replace(post, '')
+
+
 def get_container_status_state(state):
     res = {}
     if state:

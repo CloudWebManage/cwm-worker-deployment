@@ -370,8 +370,16 @@ def test_get_health():
         }
     }
 
+
 def test_get_health_no_namespace():
     namespace = MockNamespace()
     namespace_name = 'cwm-worker-123456'
     namespace._get_namespaces[namespace_name] = None
     assert deployment.get_health(namespace_name, 'minio') is None
+
+
+def test_get_namespace_name_from_hostname():
+    namespace_name = 'cwm-worker-123456'
+    for protocol in ['http', 'https']:
+        hostname = deployment.get_hostname(namespace_name, 'minio', protocol)
+        assert namespace_name == deployment.get_namespace_name_from_hostname('minio', protocol, hostname)
